@@ -32,6 +32,8 @@ TITLES = [
 IDS = [f"QA{i:02d}" for i in range(1, 22)]
 LIMIT = 4 * 1024 * 1024
 MIN_ITERATION_SECONDS = 10 * 3600
+QA_SKILL_NAME = "autoresearch-qa-skills"
+QA_SKILL_VERSION = "0.3.2"
 OVERVIEW_DIRECTIONS = {"minimize", "maximize", "unknown"}
 TRAJECTORY_STATUSES = {"complete", "partial", "missing", "unreadable"}
 FORMAT_STATUSES = {"aligned", "aligned_with_extras", "deviations", "manual"}
@@ -532,7 +534,9 @@ def apply_review(report, review, root):
             trajectory_validation.append(validate_trajectory(root / row["source_path"], root))
     report["format_alignment"]["reviewed_trajectories"] = trajectory_validation
     report["content_gates"] = apply_content_review(review.get("content_gates"), report["overview"], root, review_evidence)
-    report["runtime_review"] = assess_runtime(review.get("runtime_review"), report["overview"]["trajectories"], root, review_evidence)
+    report["runtime_review"] = assess_runtime(
+        review.get("runtime_review"), report["overview"]["trajectories"],
+        report.get("runtime_candidates", []), root, review_evidence)
     report["format_alignment"]["review"] = validate_format_review(review.get("format_review"))
     rows = review.get("checks", [])
     if not isinstance(rows, list) or not all(isinstance(row, dict) for row in rows) or len(rows) != 21 or {row.get("id") for row in rows} != set(IDS):
@@ -627,9 +631,29 @@ def main(argv=None):
     parser.add_argument("--out-dir", type=Path, default=Path("qa-report"))
     parser.add_argument("--policy", choices=("implementation", "precheck"), default="implementation")
     parser.add_argument("--review", type=Path, help="per-item semantic review JSON supplied by the skill")
-    parser.add_argument("--fail-on", choices=("never", "fail", "warn", "manual"), default="never")
+    parser.add_argument("--fail-on", choices=("never", "fail", "warn", "manual", "incomplete"), default="never")
+    parser.add_argument("--release-self-check", action="store_true",
+                        help="enforce immutable ZIP-only release QA and provenance")
+    parser.add_argument("--reviewer-provider")
+    parser.add_argument("--reviewer-model")
+    parser.add_argument("--reviewer-version")
+    parser.add_argument("--session-id")
+    parser.add_argument("--clean-context", action="store_true",
+                        help="attest that this new session received only the submission ZIP")
     args = parser.parse_args(argv)
     source, out = args.source.expanduser().resolve(), args.out_dir.expanduser().resolve()
+    if args.release_self_check:
+        missing = [flag for flag, value in (
+            ("--review", args.review), ("--reviewer-provider", args.reviewer_provider),
+            ("--reviewer-model", args.reviewer_model), ("--reviewer-version", args.reviewer_version),
+            ("--session-id", args.session_id), ("--clean-context", args.clean_context),
+        ) if not value]
+        if missing:
+            parser.error("release self-check requires " + ", ".join(missing))
+        if not source.is_file() or source.suffix.lower() != ".zip":
+            parser.error("release self-check accepts exactly one .zip submission")
+        if out.exists() and (not out.is_dir() or any(out.iterdir())):
+            parser.error("release self-check out-dir must be new or empty; final reports are immutable")
     # Never let report output overwrite or contaminate the submitted artifact.
     if out == source or (source.is_dir() and out.is_relative_to(source)):
         parser.error("out-dir must be outside the submitted artifact")
@@ -659,11 +683,24 @@ def main(argv=None):
     except (OSError, ValueError, UnicodeError, legacy.zipfile.BadZipFile) as exc:
         report["inspection_error"] = str(exc)
         finish(report)
+    if args.release_self_check:
+        report["qa_run"] = {
+            "skill": {"name": QA_SKILL_NAME, "version": QA_SKILL_VERSION},
+            "artifact_sha256": report.get("source", {}).get("sha256"),
+            "input_kind": report.get("source", {}).get("kind"),
+            "clean_context": True,
+            "reviewer": {
+                "provider": args.reviewer_provider,
+                "model": args.reviewer_model,
+                "version": args.reviewer_version,
+                "session_id": args.session_id,
+            },
+        }
     write_report(report, out)
     print(json.dumps({"decision": report["summary"]["decision"], "report_txt": "report.txt", "report_md": "report.md", "report_json": "report.json"}, ensure_ascii=False))
     if report.get("inspection_error"):
         return 2
-    return int(args.fail_on != "never" and report["summary"]["decision"] != "PASS")
+    return int((args.release_self_check or args.fail_on != "never") and report["summary"]["decision"] != "PASS")
 
 
 if __name__ == "__main__":

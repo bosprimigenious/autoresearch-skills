@@ -1,5 +1,7 @@
 # AutoResearch Skills
 
+当前 QA 发布版本：`autoresearch-qa-skills-0.3.2`。版本号的唯一来源是仓库根目录的 [`VERSION`](VERSION)。
+
 面向研究型 Coding Agent 的可复用工作流：从论文发现、题目设计和可信 Baseline，到双轨运行、成本控制、质量验收与可执行交接。
 
 [![CI](https://github.com/bosprimigenious/autoresearch-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/bosprimigenious/autoresearch-skills/actions/workflows/ci.yml)
@@ -35,6 +37,13 @@ npx -y skills add bosprimigenious/autoresearch-skills \
 npx -y skills add bosprimigenious/autoresearch-skills --all
 ```
 
+生产质检应固定到发布标签，不能静默跟随 `main`。例如，在 `v0.3.2` 标签发布后使用：
+
+```sh
+git clone --branch v0.3.2 --depth 1 \
+  https://github.com/bosprimigenious/autoresearch-skills.git
+```
+
 安装器是可选依赖；使用前应确认其来源、目标目录和即将安装的文件。安装或更新后，重新启动 Agent 或按宿主工具的方式重新加载 skills。
 
 ### 手动安装
@@ -50,6 +59,30 @@ ln -s "$PWD/skills/autoresearch-task-qa" \
 ```
 
 推荐使用软链保持单一事实源。若目标环境不支持软链，再复制完整 skill 目录；后续更新时必须重新同步，避免旧副本继续生效。
+
+### QA 发布包
+
+`autoresearch-qa-skills-0.3.2` 是发布集合名，不是把两个 skill 塞进同一个 ZIP 的文件名。一次构建必须生成两个可独立安装的单-skill 包：
+
+- `autoresearch-task-qa-0.3.2.zip`
+- `autoresearch-baseline-quality-0.3.2.zip`
+
+每个 ZIP 只允许一个同名顶层目录和一份顶层 `SKILL.md`。旧式 `autoresearch-qa-skills.zip` 若同时包含两个 skill，结构门禁会拒绝它。构建并复核：
+
+```sh
+python3 scripts/build_qa_release.py --out-dir dist
+python3 scripts/verify_skill_archive.py \
+  dist/autoresearch-task-qa-0.3.2.zip \
+  --expected-skill autoresearch-task-qa
+python3 scripts/verify_skill_archive.py \
+  dist/autoresearch-baseline-quality-0.3.2.zip \
+  --expected-skill autoresearch-baseline-quality
+(cd dist && shasum -a 256 -c autoresearch-qa-skills-0.3.2.sha256)
+```
+
+构建器固定 ZIP 时间、成员顺序与权限，同时输出 manifest 和 SHA256；相同源码必须得到逐字节相同的产物。发布时上传上述两个 ZIP、manifest 和 checksum 文件，不上传未验证的临时归档。
+
+这两个 ZIP 用于要求单-skill 归档的上传/分发入口。当前 `skills` CLI 的本地路径模式不会自动解包 ZIP；用 `npx skills add` 时应安装仓库/标签，或先把 ZIP 解压到临时目录再安装，不能把 CLI 的 `No skills found` 误判成包内 `SKILL.md` 缺失。
 
 ## 如何使用
 
@@ -102,7 +135,7 @@ paper-discovery
 3. 用 `baseline-quality` 冻结公平的正式对照。
 4. 用 `task-authoring` 依次通过 selection、pilot、container、long-run 和 release 门。
 5. 在需要双轨迹、付费 GPU 或服务器 Docker 时使用 `run-isolation`；先小规模验证，再购买连续容量。
-6. 交付前使用最新质检包 `autoresearch-qa-skills-0.3.2` 做双路独立本地质检。每路都必须开一个全新会话，只发送同一个完整提交包 ZIP，不带散文件、旧报告或作者解释。两路使用不同 AI；不同模型家族优先，同类 AI 的不同版本也可以。作者原会话内的自测不能替代这两次干净上下文实测。
+6. 交付前使用 `autoresearch-qa-skills-0.3.2` 做双路独立本地质检。每路都必须开一个全新会话，只发送同一个完整提交包 ZIP，不带散文件、旧报告或作者解释。两路使用不同 AI；不同模型家族优先，同类 AI 的不同版本也可以。作者原会话内的自测不能替代这两次干净上下文实测。此流程用于减少单一判定器盲区；仓库尚未发布可支持具体准确率提升幅度的模型实测数据，因此不作量化承诺。
 7. 需要登记外部状态时，用 `feishu-three-table` 从当期权威题号开始，分别处理领题、提交/验收和组长初检；QA 通过不自动等于外部表已回填。
 8. 会话中断或更换 Agent 时，用 `conversation-handoff` 保存可继续执行的状态。
 
@@ -132,15 +165,76 @@ optimization-surface → baseline-quality → task-authoring → task-qa
 
 ### 4. 只验收一个现成交付包
 
-使用 `autoresearch-qa-skills-0.3.2` 中的 `autoresearch-task-qa`，保持只读。本地自检必须使用两个相互隔离的新会话，每个会话只提供同一 SHA256 的完整 ZIP，并由两种不同 AI（同类不同版本可接受）各自完成一次完整质检：
+使用 `autoresearch-qa-skills-0.3.2` 中的 `autoresearch-task-qa`，保持只读。本地自检必须使用两个相互隔离的新会话，每个会话只提供同一 SHA256 的完整 ZIP，并由两种不同 AI（同类不同版本可接受）各自完成一次完整质检。
+
+先固定输入摘要：
+
+```sh
+shasum -a 256 /path/to/artifact.zip
+```
+
+然后分别在两个全新会话里，只发送这一个 `artifact.zip`。不要发送源码散文件、第一次报告、作者解释、旧聊天摘要或第二个附件。每个会话先生成该会话自己的 inventory，AI 检查解出的只读证据并生成语义 review JSON，再把最终报告写到一个新的、不同的目录。
+
+会话 A：
 
 ```sh
 python3 skills/autoresearch-task-qa/scripts/audit_task.py \
   /path/to/artifact.zip \
-  --out-dir /path/to/qa-report
+  --out-dir /path/to/qa-work-model-a
+
+# AI 在同一会话中检查 qa-work-model-a 的 inventory/evidence，
+# 并按 review schema 写出 /path/to/review-model-a.json。
+python3 skills/autoresearch-task-qa/scripts/audit_task.py \
+  /path/to/artifact.zip \
+  --out-dir /path/to/qa-final-model-a \
+  --review /path/to/review-model-a.json \
+  --release-self-check \
+  --reviewer-provider provider-a \
+  --reviewer-model model-a \
+  --reviewer-version model-a-version \
+  --session-id session-a-unique-id \
+  --clean-context \
+  --fail-on incomplete
 ```
 
-该命令生成静态报告，不会运行任务代码、构建 Docker 镜像或独立复现实验。最终报告必须把静态结论、包内已有证据和本次未验证的运行状态分开。
+会话 B 必须是另一个新会话，且 AI 身份与会话 ID 均不同：
+
+```sh
+python3 skills/autoresearch-task-qa/scripts/audit_task.py \
+  /path/to/artifact.zip \
+  --out-dir /path/to/qa-work-model-b
+
+# AI 在同一会话中检查 qa-work-model-b 的 inventory/evidence，
+# 并按 review schema 写出 /path/to/review-model-b.json。
+python3 skills/autoresearch-task-qa/scripts/audit_task.py \
+  /path/to/artifact.zip \
+  --out-dir /path/to/qa-final-model-b \
+  --review /path/to/review-model-b.json \
+  --release-self-check \
+  --reviewer-provider provider-b \
+  --reviewer-model model-b \
+  --reviewer-version model-b-version \
+  --session-id session-b-unique-id \
+  --clean-context \
+  --fail-on incomplete
+```
+
+上面的 `provider-*`、`model-*`、版本和 session ID 是字段示例，实际运行必须替换为真实值。`--release-self-check` 拒绝目录输入、已有非空输出目录及缺失 review/provenance 的调用，并把报告绑定到输入 SHA256。`--fail-on incomplete` 使非 `PASS` 不能以退出码 0 混过流水线。
+
+这些 provenance 字段是审计声明，不是远程证明：脚本能检查字段、摘要和两路差异，但不能从 JSON 反向证明宿主真的开了新会话或只发送了一个附件。应保留原始会话记录，并由会话启动流程保证隔离，不能事后补字段。
+
+两路完成后再运行 skill 自带的双报告聚合器；输出路径必须尚不存在：
+
+```sh
+python3 skills/autoresearch-task-qa/scripts/aggregate_qa_reports.py \
+  /path/to/qa-final-model-a/report.json \
+  /path/to/qa-final-model-b/report.json \
+  --out /path/to/qa-consensus.json
+```
+
+聚合门验证：输入包 SHA256 相同、skill 版本相同、会话 ID 不同、AI 身份满足差异要求、两路均为 `PASS`，并把逐项结论分歧保留到 `unresolved_disagreements`。缺任一项或存在未解决分歧都只能报 `NOT_READY`。单路通过、作者原会话自测、把第一路报告喂给第二路，或人工拼一份“共识”JSON，都不算双路独立质检。
+
+审查命令生成静态报告，不会自动证明任务代码已运行、Docker 镜像已构建或实验已独立复现。最终报告必须把静态结论、包内已有证据和本次未验证的运行状态分开。
 
 ## 设计原则
 
@@ -167,7 +261,13 @@ autoresearch-skills/
 ├── scripts/
 │   ├── validate_skills.py
 │   ├── sync_formats.py
-│   └── privacy_scan.py
+│   ├── privacy_scan.py
+│   ├── build_qa_release.py
+│   ├── verify_skill_archive.py
+│   └── validate_route_evals.py
+├── evals/
+│   └── qa-skill-routing.jsonl
+├── VERSION
 └── .github/workflows/ci.yml
 ```
 
@@ -183,6 +283,8 @@ export PYTHONDONTWRITEBYTECODE=1
 python3 scripts/validate_skills.py
 python3 scripts/sync_formats.py --check
 python3 scripts/privacy_scan.py
+python3 scripts/validate_route_evals.py
+python3 scripts/build_qa_release.py --out-dir .release-test
 
 python3 -m unittest discover \
   -s skills/autoresearch-task-qa/scripts -p 'test_*.py'
@@ -194,6 +296,8 @@ python3 -m unittest discover \
   -s skills/autoresearch-task-authoring/scripts -p 'test_*.py'
 python3 -m unittest discover -s scripts -p 'test_*.py'
 ```
+
+路由 eval 的结构门禁不等于模型实测。要报告路由准确率，必须按 [`evals/README.md`](evals/README.md) 保存固定模型版本下的逐条输出和判定结果。
 
 修改 `SKILL.md` 后，先重新生成兼容格式，再复核差异：
 

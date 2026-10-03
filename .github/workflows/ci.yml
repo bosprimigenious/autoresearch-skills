@@ -18,6 +18,8 @@ jobs:
       - run: python scripts/validate_skills.py
       - run: python scripts/sync_formats.py --check
       - run: python scripts/privacy_scan.py
+      - run: python scripts/validate_route_evals.py
+      - run: python scripts/build_qa_release.py --out-dir /tmp/autoresearch-qa-release
       - run: python -m unittest discover -s skills/autoresearch-task-qa/scripts -p 'test_*.py'
       - run: python -m unittest discover -s skills/autoresearch-paper-discovery/scripts -p 'test_*.py'
       - run: python -m unittest discover -s skills/autoresearch-run-isolation/scripts -p 'test_*.py'

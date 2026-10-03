@@ -1,4 +1,4 @@
 interface:
   display_name: "AutoResearch 自动质检"
   short_description: "前置检查纯调参、弱基线与提升，复核21项、Docker路径并生成专家退回说明"
-  default_prompt: "使用 $autoresearch-task-qa 只读质检这个产物：先介绍优化面、Baseline与Reference方法并审三项内容门槛，再检查21项实现、Docker路径、Harbor和完整成对证据，输出TXT报告及可执行的专家退回说明。"
+  default_prompt: "使用 $autoresearch-task-qa 只读质检这个唯一的完整 ZIP：发布自检必须在干净新会话记录模型/版本/会话与产物哈希；先审三项内容门槛，再检查21项实现、Docker路径、Harbor和完整成对证据，输出不可覆盖的最终报告。"

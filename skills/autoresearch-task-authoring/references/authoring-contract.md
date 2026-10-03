@@ -32,3 +32,38 @@
 - 冻结唯一完整提交包 ZIP 及其 SHA256，不把散文件或已解压目录作为本地质检输入。
 - 使用 `autoresearch-qa-skills-0.3.2`，由两种不同 AI（或同类 AI 的不同版本）在彼此隔离的新会话中，对同一 ZIP 各自完成一次质检实测。每个会话只提供该 ZIP，不提供旧 QA 报告或作者引导。
 - 两路 QA 均通过且结论一致；有分歧时回到 ZIP 内证据和对应检查项闭环，不以多数投票掩盖硬失败。
+
+## Release 证据 schema
+
+`release-evidence.json` 中早期里程碑字段仍需齐全，发布字段必须使用下面的对象结构；相对路径按该 JSON 所在目录解析：
+
+```json
+{
+  "qa_reports": [
+    {"path": "qa-a/report.json", "sha256": "<report-a-sha256>"},
+    {"path": "qa-b/report.json", "sha256": "<report-b-sha256>"}
+  ],
+  "qa_consensus": {"path": "qa-consensus.json", "sha256": "<consensus-sha256>"},
+  "attachment_privacy_report": {"path": "privacy-report.json", "sha256": "<privacy-sha256>"},
+  "artifact_manifest": {"path": "artifact-manifest.json", "sha256": "<manifest-sha256>"}
+}
+```
+
+每份 QA `report.json` 必须满足：
+
+- `source.kind` 为 `zip`，两份 `source.sha256` 相同且是完整 64 位 SHA256；
+- `summary.decision` 为 `PASS`；
+- `qa_run.skill` 为 `{"name":"autoresearch-qa-skills","version":"0.3.2"}`；
+- `qa_run.input_kind` 为 `zip`，`qa_run.artifact_sha256` 等于 `source.sha256`；
+- `qa_run.clean_context` 为布尔值 `true`；
+- `qa_run.reviewer` 同时记录非空的 `provider`、`model`、`version`、`session_id`。两份报告的 `(provider, model, version)` 三元组和 `session_id` 都必须不同。
+
+`qa-consensus.json` 必须由聚合步骤生成并绑定两份报告的实测摘要：`skill` 为上述固定名称与版本，`status` 为 `PASS`，`report_sha256s` 恰好包含两份 `report.json` 的 SHA256，`artifact_sha256` 等于共同 ZIP 的 SHA256，`unresolved_disagreements` 与 `validation_errors` 都是空数组。`privacy-report.json` 的 `status`（或 `summary.status` / `summary.decision`）必须为 `PASS`。`artifact-manifest.json` 的 `artifact_sha256` 必须绑定同一 ZIP。
+
+门禁会重新读取以上四类 JSON 并计算文件摘要，不采信只有路径字符串、手填状态或旧的 `independent_qa_report` 字段。运行：
+
+```bash
+python3 scripts/authoring_gate.py release release-evidence.json
+```
+
+只有退出码为 0 且输出 `status: PASS` 才能发布。

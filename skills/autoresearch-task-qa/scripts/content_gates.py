@@ -175,7 +175,7 @@ def apply_review(review, overview, root, validate_evidence):
     return {"schema_version": 1, "checks": final}
 
 
-def assess_runtime(review, trajectories, root, validate_evidence):
+def assess_runtime(review, trajectories, runtime_candidates, root, validate_evidence):
     if not isinstance(review, dict):
         raise ValueError("review.runtime_review is required for two effective-duration reviews")
     rows = review.get("trajectories")
@@ -184,6 +184,8 @@ def assess_runtime(review, trajectories, root, validate_evidence):
     expected = {row["name"]: row for row in trajectories}
     if len(expected) != 2 or {row.get("name") for row in rows} != set(expected):
         raise ValueError("runtime_review trajectory names must match the two overview trajectories")
+    if not isinstance(runtime_candidates, list) or not all(isinstance(row, dict) for row in runtime_candidates):
+        raise ValueError("runtime_candidates must be an array of collected runtime observations")
     failures, missing, refs, normalized = [], [], [], []
     sources = [row.get("source_path") for row in rows if row.get("source_path") is not None]
     if len(sources) == 2 and sources[0] == sources[1]:
@@ -199,6 +201,28 @@ def assess_runtime(review, trajectories, root, validate_evidence):
             raise ValueError(f"runtime_review {name}: effective_seconds must be nonnegative finite or null")
         validate_evidence(root, row.get("evidence", []), f"runtime_review {name}")
         refs.extend(row.get("evidence", []))
+        duration_evidence = row.get("duration_evidence")
+        candidates = [candidate for candidate in runtime_candidates
+                      if isinstance(candidate.get("evidence"), str)
+                      and candidate["evidence"].split("#", 1)[0] == row.get("source_path")]
+        selected = next((candidate for candidate in candidates
+                         if candidate.get("evidence") == duration_evidence), None)
+        if not text(duration_evidence):
+            missing.append(name + "缺少 collector 生成的 duration_evidence，手填 effective_seconds 不能单独作为时长证据")
+        elif selected is None:
+            missing.append(name + "的 duration_evidence 未匹配 collector 的原始 runtime_candidates")
+        else:
+            raw_seconds = selected.get("seconds")
+            if not finite(raw_seconds) or raw_seconds < 0:
+                missing.append(name + "匹配到的原始时长不可用")
+            elif seconds is not None and seconds > raw_seconds + 1e-6:
+                failures.append(name + "有效时长大于 collector 从原始记录解析出的总时长")
+            row["verified_runtime"] = {
+                "raw_seconds": raw_seconds,
+                "duration_evidence": selected["evidence"],
+                "run_id": selected.get("run_id", ""),
+            }
+            refs.append(selected["evidence"])
         if seconds is None or not row.get("evidence") or not text(row.get("time_accounting")) or row.get("source_path") is None:
             missing.append(name + "缺少有效时长或排除排队/安装/故障的核算证据")
         if seconds is not None:

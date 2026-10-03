@@ -33,6 +33,31 @@ The JSON top level is:
 }
 ```
 
+Implementation release self-check reports additionally contain immutable-run
+provenance bound to the inspected archive:
+
+```json
+{
+  "source": {"kind": "zip", "sha256": "..."},
+  "summary": {"decision": "PASS|FAIL|INCOMPLETE"},
+  "qa_run": {
+    "skill": {"name": "autoresearch-qa-skills", "version": "0.3.2"},
+    "artifact_sha256": "same as source.sha256",
+    "input_kind": "zip",
+    "clean_context": true,
+    "reviewer": {
+      "provider": "...", "model": "...", "version": "...", "session_id": "..."
+    }
+  }
+}
+```
+
+`scripts/aggregate_qa_reports.py` consumes exactly two such final reports. Its
+JSON includes `status`, `artifact_sha256`, `report_sha256s`,
+`unresolved_disagreements`, and `validation_errors`. A release consensus is
+valid only when `status` is `PASS`, the disagreement/error arrays are empty,
+and the recorded report hashes match the two files used by the authoring gate.
+
 Each check contains `id`, `title`, `status`, `severity`, `summary`, `evidence`,
 and `remediation`. Status is `pass`, `fail`, `warn`, `manual`, or
 `not_applicable`. Severity is `blocker`, `high`, `medium`, `low`, or `info`.

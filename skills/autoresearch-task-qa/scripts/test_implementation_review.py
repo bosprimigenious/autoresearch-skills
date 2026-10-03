@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 
 import implementation_review as qa
 
@@ -101,6 +102,7 @@ class ImplementationReviewTests(unittest.TestCase):
                                   "upper_bound": 5.0, "threshold_basis": "算法规范3σ_B及[0.15,0.8]。"}
         runtime = {"exception_reason": "", "trajectories": [
             {"name": row["name"], "source_path": row["source_path"], "effective_seconds": 36000,
+             "duration_evidence": row["source_path"] + "#.duration_seconds",
              "evidence": [row["source_path"]], "time_accounting": "总历时12h，扣除2h安装和排队后有效10h。"}
             for row in overview["trajectories"]]}
         harbor_review = valid_review()
@@ -157,6 +159,28 @@ class ImplementationReviewTests(unittest.TestCase):
         report = qa.apply_review(self.report(), review, self.root)
         self.assertEqual(report["checks"][15]["status"], "fail")
         self.assertEqual(report["summary"]["decision"], "FAIL")
+
+    def test_review_runtime_cannot_exceed_collected_raw_duration(self):
+        for name in ("trajectory_a.json", "trajectory_b.json"):
+            self.write(name, {"run_duration_seconds": 1, "rounds": [{
+                "round": 1, "policy_name": "fixture", "method_summary": "Synthetic test fixture only.",
+                "status": "ok", "score": 0.2, "failure_reason": None,
+                "retained_best": True, "time": "2026-09-30 10:00:00"}]})
+        review = self.review()
+        for row in review["runtime_review"]["trajectories"]:
+            row["duration_evidence"] = row["source_path"] + "#.run_duration_seconds"
+            row["effective_seconds"] = 36000
+        report = qa.apply_review(self.report(), review, self.root)
+        self.assertEqual(report["checks"][15]["status"], "fail")
+        self.assertEqual(report["summary"]["decision"], "FAIL")
+        self.assertIn("大于 collector", report["checks"][15]["summary"])
+
+    def test_runtime_requires_collector_duration_evidence(self):
+        review = self.review()
+        del review["runtime_review"]["trajectories"][0]["duration_evidence"]
+        report = qa.apply_review(self.report(), review, self.root)
+        self.assertEqual(report["checks"][15]["status"], "manual")
+        self.assertEqual(report["summary"]["decision"], "INCOMPLETE")
 
     def test_effective_runtime_uses_ten_hours_for_each_trajectory(self):
         for seconds, expected in ((25199, "fail"), (25200, "manual"), (35999, "manual"), (36000, "pass")):
@@ -469,6 +493,37 @@ class ImplementationReviewTests(unittest.TestCase):
         report = json.loads((out / "report.json").read_text())
         self.assertEqual(len(report["checks"]), 21)
         self.assertEqual(report["summary"]["decision"], "INCOMPLETE")
+
+    def test_release_self_check_is_zip_only_immutable_and_records_provenance(self):
+        archive = self.root.parent / "submission.zip"
+        with zipfile.ZipFile(archive, "w") as bundle:
+            for path in self.root.rglob("*"):
+                if path.is_file():
+                    bundle.write(path, path.relative_to(self.root))
+        review_path = self.root.parent / "review.json"
+        review_path.write_text(json.dumps(self.review()))
+        out = self.root.parent / "release-report"
+        args = [str(archive), "--out-dir", str(out), "--review", str(review_path),
+                "--release-self-check", "--reviewer-provider", "provider-a",
+                "--reviewer-model", "model-a", "--reviewer-version", "2026-10",
+                "--session-id", "fresh-session-a", "--clean-context", "--fail-on", "incomplete"]
+        entrypoint = Path(__file__).with_name("audit_task.py")
+        completed = subprocess.run([sys.executable, str(entrypoint), *args], capture_output=True, text=True)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        report = json.loads((out / "report.json").read_text())
+        self.assertEqual(report["summary"]["decision"], "PASS")
+        self.assertEqual(report["source"]["kind"], "zip")
+        self.assertEqual(report["qa_run"]["artifact_sha256"], report["source"]["sha256"])
+        self.assertEqual(report["qa_run"]["skill"], {"name": "autoresearch-qa-skills", "version": "0.3.2"})
+        self.assertEqual(report["qa_run"]["reviewer"]["session_id"], "fresh-session-a")
+        with self.assertRaises(SystemExit):
+            qa.main(args)
+
+    def test_release_self_check_rejects_directory_input(self):
+        with self.assertRaises(SystemExit):
+            qa.main([str(self.root), "--release-self-check", "--review", "review.json",
+                     "--reviewer-provider", "p", "--reviewer-model", "m",
+                     "--reviewer-version", "v", "--session-id", "s", "--clean-context"])
 
     def test_cleanup_only_removes_collector_owned_evidence(self):
         out = self.root.parent / "out-cleanup"

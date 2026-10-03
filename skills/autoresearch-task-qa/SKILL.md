@@ -27,11 +27,11 @@ Baseline 专项按 research-quality.md 中的路由使用已安装的 autoresear
 
 ## 工作流程
 
-1. 从本 Skill 目录安全清点，每个独立任务分别处理，输出目录须在待检产物外：
+1. 从本 Skill 目录安全清点，每个独立任务分别处理，输出目录须在待检产物外。普通审计可使用兼容入口：
 
        python3 scripts/audit_task.py /absolute/path/artifact.zip --out-dir /absolute/path/qa-report
 
-   初次 inventory.json、report.json/md/txt 是未完成初稿。只用收集器整理文件和数值观察，不能把关键词命中当语义结论。ZIP 的 evidence-* 副本供后续只读检查。
+   初次 inventory.json、report.json/md/txt 是未完成初稿。只用收集器整理文件和数值观察，不能把关键词命中当语义结论。ZIP 的 evidence-* 副本供后续只读检查。发布自检不得用这个兼容入口冒充最终报告；必须在干净新会话里使用下述 release 模式。
 
 2. 阅读真实 instruction、可改方法及其调用链、Starter、Reference、评分器、协议、Dockerfile、全部正式 B/R 运行与模型索引、两条轨迹和专家说明。先写优化面、Baseline 方法、Reference 方法介绍，再按 G01–G03 判定。即使已有内容门槛失败，仍完成可安全执行的其余静态检查，集中退回问题；不可读部分写未完成。
 
@@ -43,7 +43,7 @@ Baseline 专项按 research-quality.md 中的路由使用已安装的 autoresear
 
 6. 检查 21 项、Harbor H01–H06、三目录职责和 Docker 路径。显式设置 `[verifier] environment_mode = "separate"`，交付 `environment/Dockerfile` 与 `tests/Dockerfile`；分别核对构建上下文、COPY、入口、依赖和提交物移交。公开 Dev 评测必须供 Agent 迭代，最终私有 Hidden 材料不得暴露给 Agent。Hidden 材料必需，但目录名可灵活，也可采用有实现与调用证据的生成或安全注入，不能仅凭目录非空通过。Agent 结束后才移交最终提交至独立 Verifier。核对必交的当前题包版本 NOP Trial；不必交 Oracle，源码 `solution/` 是可选 Oracle，不能与运行时提交目录混淆。NOP 的 0 分不单独决定检查结论。详见 [Harbor 六项](references/harbor-harness.md)。
 
-7. 在报告目录用文件编辑工具建立 review.json。QA01–QA21、G01–G03、H01–H06 分别恰好各一次；另填 overview、format_review、runtime_review。所有结论引用真实路径/字段，失败和待补证据项给具体 remediation 与 acceptance_evidence。QA16、QA17 和 G03 的可计算结论由脚本校验，不能手填 pass 覆盖反证。
+7. 在报告目录用文件编辑工具建立 review.json。QA01–QA21、G01–G03、H01–H06 分别恰好各一次；另填 overview、format_review、runtime_review。所有结论引用真实路径/字段，失败和待补证据项给具体 remediation 与 acceptance_evidence。QA16 每条轨迹还必须把 `duration_evidence` 精确指向 collector 生成的 `runtime_candidates[].evidence`；脚本核对 `effective_seconds` 不大于该原始总时长，找不到候选或互相矛盾时不能通过。QA16、QA17 和 G03 的可计算结论由脚本校验，不能手填 pass 覆盖反证。
 
 8. 生成并回读最终报告：
 
@@ -56,6 +56,29 @@ Baseline 专项按 research-quality.md 中的路由使用已安装的 autoresear
 10. 填写当期验收表前，从当期权威题库重新读取期次、题号和记录主键，并与这次审查的任务标题、论文和产物对齐。不从旧期表、文件夹名或历史报告推断；权威表不可达时停在 `INCOMPLETE`，不对外写“已提交”。
 
 11. 准备开源、上传或外发时，另读 [隐私与可移植性门禁](references/privacy-and-portability.md)，并对每个候选附件运行 `privacy-check --strict`。主提交包、QA/self-check、轨迹、证据包和交接附件必须逐件检查；主包通过不能替其他附件背书。发现凭据、作者 home 路径、邮箱、内网端点或私有文件链接时，外发结论为 `NOT READY`，只报告命中类型和文件位置，不回显秘密原文。
+
+## 发布自检与双 AI 共识
+
+每个 AI 在独立的新会话中只接收同一个完整 ZIP；`review.json` 是该会话阅读 ZIP 后自行形成的结构化判断，不得由另一审查会话提供。每次都使用新的输出目录，最终目录和共识文件不可复写：
+
+       python3 scripts/audit_task.py /absolute/path/submission.zip \
+         --out-dir /absolute/path/qa-run-provider-model-version-session \
+         --review /absolute/path/review.json --release-self-check \
+         --reviewer-provider PROVIDER --reviewer-model MODEL \
+         --reviewer-version VERSION --session-id UNIQUE_SESSION_ID \
+         --clean-context --fail-on incomplete
+
+release 模式只接受 `.zip`，要求完整 review 与 reviewer 四字段，非 `PASS` 必须非零退出。它在 `report.json.qa_run` 写入固定 Skill 身份 `autoresearch-qa-skills/0.3.2`、ZIP SHA256、输入类型、模型/版本/会话及 clean-context 明示；已有内容的输出目录会被拒绝，防止终稿被后续收集覆盖。`--clean-context` 是审查者对真实新会话输入的明示，不是脚本能从文件系统推断的事实。
+
+两份最终报告生成后再聚合；聚合阶段不能回改首轮报告：
+
+       python3 scripts/aggregate_qa_reports.py \
+         /absolute/path/qa-run-a/report.json /absolute/path/qa-run-b/report.json \
+         --out /absolute/path/qa-consensus.json
+
+聚合器恰好接收两份报告，并验证：同一 ZIP SHA256、两者均 `PASS`、Skill/版本一致、clean context 为真、模型身份（provider/model/version）不同、session_id 不同。QA/G/Harbor 状态不一致会写入 `unresolved_disagreements`；任何验证错误或未解决分歧都输出 `NOT_READY` 并非零退出。只有 `status=PASS` 且 `unresolved_disagreements=[]` 才能进入作者发布门禁。
+
+`clean_context`、模型身份和 session_id 是需要保留原始会话记录支撑的审计声明；本地脚本只能校验字段与相互一致性，不能从报告 JSON 反向证明宿主确实创建了新会话或只发送了一个附件。会话隔离必须由实际启动流程保证，不能事后补字段冒充。
 
 ## 覆盖边界
 

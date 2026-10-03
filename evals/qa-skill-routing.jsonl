@@ -1,0 +1,15 @@
+{"id":"direct-task-qa-01","category":"direct","prompt":"使用 autoresearch-task-qa 审查这个完整提交 ZIP，并给出发布结论。","expected_skills":["autoresearch-task-qa"]}
+{"id":"direct-task-qa-02","category":"direct","prompt":"请调用 QA skill 检查任务包的 Harbor、隐私和实现质量。","expected_skills":["autoresearch-task-qa"]}
+{"id":"direct-baseline-01","category":"direct","prompt":"使用 autoresearch-baseline-quality 判断这个正式 baseline 是否公平可复现。","expected_skills":["autoresearch-baseline-quality"]}
+{"id":"direct-both-01","category":"direct","prompt":"先审查 baseline 公平性，再用 task QA 对最终 ZIP 做发布验收。","expected_skills":["autoresearch-baseline-quality","autoresearch-task-qa"]}
+{"id":"direct-task-qa-03","category":"direct","prompt":"对附件运行 autoresearch-task-qa，只做只读检查，不执行不受信代码。","expected_skills":["autoresearch-task-qa"]}
+{"id":"indirect-task-qa-01","category":"indirect","prompt":"这个研究任务压缩包能不能交付？请核对容器、隐藏测试和证据链。","expected_skills":["autoresearch-task-qa"]}
+{"id":"indirect-task-qa-02","category":"indirect","prompt":"请独立验收这个 AutoResearch 提交物，静态结论和未复跑项要分开。","expected_skills":["autoresearch-task-qa"]}
+{"id":"indirect-baseline-01","category":"indirect","prompt":"新方法提升了 0.3 分，但对照组少跑了一半预算，这个比较成立吗？","expected_skills":["autoresearch-baseline-quality"]}
+{"id":"indirect-baseline-02","category":"indirect","prompt":"帮我确认正式对照的 seed、预算、实现和评测口径有没有偏差。","expected_skills":["autoresearch-baseline-quality"]}
+{"id":"indirect-both-01","category":"indirect","prompt":"交付前先判断对照是否可信，再对完整压缩包做独立发布门禁。","expected_skills":["autoresearch-baseline-quality","autoresearch-task-qa"]}
+{"id":"negative-01","category":"negative","prompt":"把这段论文摘要润色成更简洁的英文，不要审查代码或实验。","expected_skills":[]}
+{"id":"negative-02","category":"negative","prompt":"设计一个两天的杭州旅游路线，并推荐交通和酒店。","expected_skills":[]}
+{"id":"negative-03","category":"negative","prompt":"修复网页导航栏在手机端溢出的 CSS 问题并运行前端测试。","expected_skills":[]}
+{"id":"negative-04","category":"negative","prompt":"从三篇公开论文里筛选一个新的研究题目，暂时没有提交包。","expected_skills":[]}
+{"id":"negative-05","category":"negative","prompt":"把服务器上的两个训练进程分配到不同 GPU，并设置崩溃恢复。","expected_skills":[]}
