@@ -53,7 +53,7 @@ class HarborReviewTests(unittest.TestCase):
         result = self.apply(valid_review())
         self.assertEqual(result["static_status"], "pass")
         self.assertEqual(result["runtime_status"], "not_run")
-        self.assertEqual(result["qa17_status"], "pass")
+        self.assertEqual(result["qa17_status"], "fail")
         self.assertIn("动态运行未验证", harbor.summary(result))
 
     def test_missing_six_part_review_cannot_pass(self):
@@ -173,13 +173,13 @@ class HarborReviewTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "numeric"):
             self.apply(review)
 
-    def test_missing_recommended_nop_cannot_be_declared_failure(self):
+    def test_missing_required_nop_blocks_qa17(self):
         review = valid_review()
         review["checks"][5] = {"id": "H06", "status": "fail", "summary": "未交 NOP。", "evidence": []}
         actual = self.apply(review)
-        self.assertEqual(actual["checks"][5]["status"], "not_applicable")
+        self.assertEqual(actual["checks"][5]["status"], "fail")
         self.assertEqual(actual["runtime_status"], "not_run")
-        self.assertEqual(actual["qa17_status"], "pass")
+        self.assertEqual(actual["qa17_status"], "fail")
 
     def test_generated_hidden_does_not_need_named_data_directory(self):
         review = valid_review()
@@ -287,7 +287,7 @@ class HarborReviewTests(unittest.TestCase):
         review["artifact_override"] = {"summary": "目标版本 Job 指定有效 artifacts。", "evidence": ["job.yaml"]}
         self.assertEqual(self.apply(review)["checks"][1]["status"], "manual")
 
-    def test_candidate_trial_is_accepted_without_nop(self):
+    def test_candidate_trial_cannot_replace_required_nop(self):
         review = self.trial()
         config_path = self.root / "run-a/config.json"
         config = json.loads(config_path.read_text())
@@ -298,7 +298,8 @@ class HarborReviewTests(unittest.TestCase):
         result["agent_info"]["name"] = "oracle"
         result_path.write_text(json.dumps(result))
         actual = self.apply(review)
-        self.assertEqual(actual["runtime_status"], "evidence_consistent")
+        self.assertEqual(actual["runtime_status"], "failed")
+        self.assertEqual(actual["qa17_status"], "fail")
         self.assertEqual(actual["trial_evidence"]["agent"], "oracle")
 
     def test_relocated_host_task_path_is_not_rejected(self):

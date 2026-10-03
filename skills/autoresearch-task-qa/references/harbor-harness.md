@@ -37,24 +37,24 @@ Verifier 从 tests/ 上下文构建，镜像自行提供 `/tests/test.sh`、评�
 | H03 环境、路径与提交物 | 分别从 environment/、tests/ 检查双镜像 COPY、WORKDIR、入口、依赖与可见边界；测试启动 cwd 不保证 /tests。沿评分调用确认提交物路径、必要模型/配置及 artifacts 覆盖。历史 task-root profile 需适配依据，不能照搬私有 tests 到 Agent。确定路径错误强制 fail，动态语法未能解析保留 manual。只读检查不认证完整物理隔离、CPU/GPU 上限或12h稳定性。 |
 | H04 测试入口与 reward | 沿 test.sh 实际调用链检查必填参数、标量主分数及失败处理；须写 /logs/verifier/reward.txt 的有限数值，或 reward.json 非空有限数值对象。两者并存按优先 reward.json 核对。自定义 result.json、stdout score、注释或死代码不算接口完成。合法负数或 >1 与业务归一化门槛分开判断。 |
 | H05 Job/Trial 调用配置 | 有配置时核对所选 task/provider/agent、有效覆盖、启动条件、verifier 未被禁用；检查重复键、错误路径、空选择和明确冲突。单任务 CLI 可用，不强制 job.yaml；确无配置可 not_applicable，已有反证不能跳过。 |
-| H06 已有运行证据 | 推荐 NOP 自检，也审有效候选或其他 Agent 的真实 Trial。核对同一次运行的 config.json、result.json、reward、日志、任务版本与双镜像对应关系、separate、结束/异常状态及分数一致性。无运行材料可 not_applicable，同时 runtime_status=not_run；材料已交但不完整/版本无法解释则 manual，明确接入错误则 fail。纯基础设施障碍应说明，不直接归咎题目实现。 |
+| H06 NOP 自检记录 | 必交当前题包版本的一次 NOP Trial。核对同一次运行的 config.json、result.json、reward、日志、任务版本与双镜像对应关系、separate、结束/异常状态及分数一致性。缺失时 H06 fail、runtime_status=not_run；材料已交但不完整/版本无法解释则 manual，明确接入错误则 fail。其他 Agent Trial 只能作补充材料。 |
 
-H01–H04 必查；H05/H06 按已有材料适用。NOP 尚非必交，不因单纯缺 NOP 使 QA17 fail。报告必须同时列静态结论与运行状态：静态通过、not_run 不等于正式链路验收通过，也不免除教程原有的真实 Baseline/Reference、Agent 迭代或正式评分证据。
+H01–H04 与 H06 必查；H05 按已有材料适用。缺少同版本 NOP 记录时 QA17 fail。报告必须同时列静态结论与运行状态；完成 NOP 仍不能替代真实 Baseline/Reference、Agent 迭代或正式评分证据。
 
-## NOP 自检（推荐）
+## NOP 自检（必交）
 
 NOP 是 no-operation Agent：不调用模型求解，也不修改初始工作区；已有 Starter 会保留，所以不能把 NOP 一律称为“空提交”。它让 Harness 走完启动、Agent 结束、提交物移交和独立 Verifier 的实际执行分支，帮助发现构建、入口、缺依赖、路径及 reward 收集问题。若无提交触发早退，它只覆盖那条分支，不能证明完整 Hidden 评估或有效候选可运行。
 
-专家或平台可在具备 Docker 能力、目标 Harbor 版本一致的环境选择 `nop` 跑一次，保留任务版本对应依据，以及同一 Trial 的配置、结果、reward 和日志。平台已有对应记录可以复用，不要求专家重复跑，更不用新增一条10小时求解轨迹。耗时取决于构建与评分器，不能承诺一定很快；本只读 Skill 不自动发起运行。
+专家或平台须在具备 Docker 能力、目标 Harbor 版本一致的环境选择 `nop` 跑一次，保留任务版本对应依据，以及同一 Trial 的配置、结果、reward 和日志。平台已有同版本记录可以复用，不要求重复跑，更不用新增一条10小时求解轨迹。耗时取决于构建与评分器，不能承诺一定很快；本只读 Skill 不自动发起运行。
 
 检查的是是否符合题目约定的处理行为，而非 NOP 得分高低。0 分可能是预期，也可能来自错误早退，必须结合异常、退出状态与评分日志判断。完成了 NOP 仍不能替代公开 Dev 的实际反馈、有效提交的正式评分、模型独立重载与 Baseline/Reference 改善证据。
 
 ## 自动证据校验与报告
 
-H06 自动校验支持单步 Trial：config/result 的 Agent 身份一致、result 声明 separate、有结束时间且无异常、verifier_result.rewards 与优先 reward 文件一致、必要配置/日志非空且证据属于同目录。任务身份、版本及历史路径通过运行材料与 trial_task_binding 复核；同名不等于同版本。自动检查不鉴定日志真伪，多步或不支持的版本标 manual，不伪造单步材料。
+H06 自动校验支持单步 NOP Trial：config/result 的 Agent 身份一致且为 nop、result 声明 separate、有结束时间且无异常、verifier_result.rewards 与优先 reward 文件一致、必要配置/日志非空且证据属于同目录。任务身份、版本及历史路径通过运行材料与 trial_task_binding 复核；同名不等于同版本。自动检查不鉴定日志真伪，多步或不支持的版本标 manual，不伪造单步材料。
 
 Harbor 的 agent/trajectory.json 若为 ATIF，按其声明版本识别；专家 AutoResearch 轨迹仍采用八字段，不互套 schema。artifacts 配置存在不等于文件已成功移交；已有运行记录应检查实际移交结果。源码参考解、私有轨迹不应成为 Agent 前置上下文。
 
-报告保留21行，QA17 汇总 H01–H06；细项与路径证据写入 report.json.harbor。已有记录一致只称“已有 Trial 运行证据一致，非独立复跑”；无材料显示 not_run，不写“已实测通过”。
+报告保留21行，QA17 汇总 H01–H06；细项与路径证据写入 report.json.harbor。已有记录一致只称“已有 NOP 自检记录支持当前版本构建与运行可用，非独立复跑”；无材料显示 not_run，并将 H06 与 QA17 标为 fail。
 
 只有用户另行要求动态验证时，才依据目标 Harbor CLI help、provider、隔离环境和授权范围制定命令。在授权的可丢弃环境运行并保留配置、任务版本、日志、reward 与 Trial 结果；不在宿主机直接执行未知 test.sh/solve.sh 或导入候选模块。未实际运行不得声称动态验证完成。

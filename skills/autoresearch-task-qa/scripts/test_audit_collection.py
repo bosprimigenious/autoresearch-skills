@@ -72,7 +72,9 @@ class AuditCollectionTests(unittest.TestCase):
                   "overview": {"baseline_reference": {"baseline_method": "linear", "reference_method": "feature transformation"}},
                   "content_gates": {"checks": [{"id": key, "status": "pass"} for key in ("G01", "G02", "G03")]},
                   "harbor": {"static_status": "pass", "qa17_status": "pass", "runtime_status": "evidence_consistent",
-                             "checks": [{"id": f"H{i:02d}", "status": "pass" if i != 5 else "not_applicable"} for i in range(1, 7)],
+                             "checks": [{"id": f"H{i:02d}", "status": "pass" if i != 5 else "not_applicable",
+                                         "evidence": ["run-a/config.json"] if i == 6 else []} for i in range(1, 7)],
+                             "trial_evidence": {"agent": "nop"},
                              "artifact_contract": {"status": "pass"}, "hidden_review": {"status": "pass"},
                              "path_contract": {"status": "pass", "profile": "teaching-task-root-v1", "findings": []}}}
 
@@ -119,11 +121,11 @@ class AuditCollectionTests(unittest.TestCase):
         contract["adapter_evidence"] = ["adapter.json"]
         self.assertEqual(COLLECTION.validate_report(report), [])
 
-    def test_missing_optional_nop_does_not_fail_static_review(self):
+    def test_missing_required_nop_cannot_be_counted_as_pass(self):
         report = self.passing_report()
         report["harbor"]["checks"][5] = {"id": "H06", "status": "not_applicable", "evidence": []}
         report["harbor"]["runtime_status"] = "not_run"
-        self.assertEqual(COLLECTION.validate_report(report), [])
+        self.assertIn("PASS requires mandatory NOP evidence and H06 pass", COLLECTION.validate_report(report))
 
     def test_supplied_runtime_cannot_be_skipped(self):
         report = self.passing_report()

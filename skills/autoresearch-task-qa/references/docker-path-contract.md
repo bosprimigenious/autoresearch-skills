@@ -44,7 +44,7 @@ docker build -f workspace/harbor_task/environment/Dockerfile workspace/harbor_ta
 
 禁止把 context 改成整个提交包后将 Reference、专家私有证据或最终私有评分材料复制给 Agent。公开 Dev 评分代码及数据必须保留供 Agent 使用，不能一概禁止“评分实现”或所有名为 tests 的文件。Verifier 必须具备正式入口、私有评测材料及独立依赖；Hidden 可用其他目录或有证据的生成/安全注入。禁止依赖专家本机绝对路径或 `../` 越出 context。构建命令、provider、COPY、WORKDIR、环境变量和入口必须形成一致路径链。
 
-原生 profile 的依据见 [Harbor 规范](harbor-harness.md)，复核时说明目标版本。不能仅为规避路径错误改选 profile。教学布局须有真实适配证据，且不能暴露私有 tests 内容。NOP 推荐自检，未提供时记录运行未验证，不据此宣称构建失败或已实跑通过。
+原生 profile 的依据见 [Harbor 规范](harbor-harness.md)，复核时说明目标版本。不能仅为规避路径错误改选 profile。教学布局须有真实适配证据，且不能暴露私有 tests 内容。必交一次当前题包版本的 NOP 自检记录；未提供时 H06 与 QA17 fail、运行状态记 not_run，但不得把缺记录误写成已证明构建失败。
 
 ## 自动检查与人工边界
 

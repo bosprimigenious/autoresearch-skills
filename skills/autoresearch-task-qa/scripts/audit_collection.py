@@ -116,15 +116,18 @@ def validate_report(report: dict) -> list[str]:
                         issues.append("PASS requires H01–H04 pass; QA17 cannot override Harbor")
                     if by_id["H05"].get("status") not in ("pass", "not_applicable"):
                         issues.append("PASS contains unpassed H05 Harbor check")
-                    if by_id["H06"].get("status") not in ("pass", "not_applicable"):
-                        issues.append("PASS contains unresolved supplied Trial evidence in H06")
-                    expected_runtime = {"pass": "evidence_consistent", "not_applicable": "not_run"}.get(by_id["H06"].get("status"))
+                    if by_id["H06"].get("status") != "pass" or not by_id["H06"].get("evidence"):
+                        issues.append("PASS requires mandatory NOP evidence and H06 pass")
+                    expected_runtime = {"pass": "evidence_consistent"}.get(by_id["H06"].get("status"))
                     if harbor.get("runtime_status") != expected_runtime:
                         issues.append("Harbor runtime_status disagrees with H06")
                 if harbor.get("static_status") != "pass" or harbor.get("qa17_status") != "pass":
                     issues.append("PASS requires passing Harbor static/QA17 statuses")
-                if harbor.get("runtime_status") not in ("evidence_consistent", "not_run"):
-                    issues.append("PASS cannot hide failed or unresolved submitted Trial evidence")
+                if harbor.get("runtime_status") != "evidence_consistent":
+                    issues.append("PASS requires completed NOP runtime evidence")
+                trial = harbor.get("trial_evidence")
+                if not isinstance(trial, dict) or trial.get("agent") != "nop":
+                    issues.append("PASS requires a reviewed NOP Trial")
                 if harbor.get("runtime_status") == "not_run":
                     h06 = by_id.get("H06", {})
                     if h06.get("evidence"):

@@ -4,7 +4,7 @@ review.json 由质检代理逐项读证据后在报告目录创建，不信任�
 
 ## 共用条目
 
-QA01–QA21 恰好各一次，status 为 pass/fail/manual/not_applicable；仅 QA04/QA15/QA19 可不适用，QA15固定跳过。G01–G03 恰好各一次，不能不适用。H01–H06 恰好各一次；H06 无已有运行证据可 not_applicable，并明确 runtime_status=not_run；推荐 NOP 的缺失不单独阻断静态 QA17。H05 无可审调用配置时可 not_applicable。已有配置或 Trial 则必须核查，不能选择不适用绕过反证。
+QA01–QA21 恰好各一次，status 为 pass/fail/manual/not_applicable；仅 QA04/QA15/QA19 可不适用，QA15固定跳过。G01–G03 恰好各一次，不能不适用。H01–H06 恰好各一次；H06 必查，缺少 NOP 记录时为 fail、runtime_status=not_run，QA17 不通过。H05 无可审调用配置时可 not_applicable。已有配置或 Trial 则必须核查，不能选择不适用绕过反证。
 
 每条至少 id/status/summary/evidence。summary具体简短（QA/H≤220字）；evidence为包根相对的真实文件，可带行号或JSON字段。pass必须有证据；确定缺文件可无证据，但要写缺失路径。QA07/08引用只许instruction.md；QA12“清点无.git”允许特殊 @inventory。
 
@@ -87,7 +87,7 @@ harbor 必填 task_root（相对包根）、target_version、provider、version_
 
 teaching-task-root-v1与harbor-environment-v1的精确位置由程序计算，按docker-path-contract.md核对。custom另需dockerfile/build_context/runtime_task_root与adapter_evidence包内真实引用。未知动态语法可提交manual_resolution={summary,evidence}进行语义解释；确定源缺失、路径越界、Agent 复制最终私有评测材料或缺任一 Dockerfile，不能用人工pass覆盖。当前交付要求 Agent 与 Verifier 双 Dockerfile 独立构建，不能用预构建镜像替代。
 
-H01/H02 通过需引用选中 task.toml；H03 不能用未知 provider 通过。H06 有证据时核对同一 Trial 的 config.json、result.json、reward 与非空日志、任务及版本对应关系、separate 模式、异常/结束状态。支持 NOP 或其他有效 Trial；无证据明确 not_run，不冒充本次独立复跑。NOP 推荐，Oracle 非必交，0 分不能独立判定链路是否正常。
+H01/H02 通过需引用选中 task.toml；H03 不能用未知 provider 通过。H06 要求当前题包版本的一次 NOP Trial：核对 config.json 与 result.json 的 Agent 为 nop、reward 与非空日志、任务及版本对应关系、separate 模式、异常/结束状态。版本关联可引用已有配置、日志或专家说明填写 trial_task_binding。缺记录时 H06 fail 且 runtime_status=not_run；其他 Agent Trial 只能作补充材料。可复用平台已有同版本 NOP 记录；0 分本身不判失败，Oracle 非必交。
 
 还需填写 `harbor.hidden_review`，而不是检查固定目录名：
 

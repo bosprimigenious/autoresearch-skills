@@ -577,8 +577,14 @@ def apply_review(report, review, root):
             refs = list(dict.fromkeys(ref for r in harbor["checks"] for ref in r["evidence"]))
             result = item("QA17", harbor["qa17_status"], reason, refs)
             if result["status"] in ("fail", "manual"):
+                defaults = {}
+                if result["status"] == "fail" and len(failed) == 1 and failed[0]["id"] == "H06":
+                    defaults = {
+                        "remediation": "请使用当前题包版本运行一次 NOP 自检，确认构建、Trial 和独立 Verifier 正常完成，并提交运行记录。",
+                        "acceptance_evidence": "同一次 NOP Trial 的配置、结果、有效 reward 和日志；当前题包版本可由已有配置、日志或专家说明关联。",
+                    }
                 for field in ("remediation", "acceptance_evidence"):
-                    result[field] = nonempty_text(row.get(field), "QA17." + field)
+                    result[field] = nonempty_text(row.get(field) or defaults.get(field), "QA17." + field)
             final.append(result)
         else:
             result = item(check_id, status, reason, evidence)

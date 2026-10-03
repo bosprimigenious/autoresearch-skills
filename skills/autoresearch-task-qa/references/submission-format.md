@@ -36,7 +36,7 @@ Agent 运行时提交目录以题面为准，本教程采用 `/workspace/solutio
 
 推荐放在 `expert_evidence/trajectory_codex.json`、`trajectory_seed.json`，等价命名应在 overview.source_path 中明确映射。每轮必含 `round`、`policy_name`、`method_summary`、`status`、`score`、`failure_reason`、`retained_best`、`time`。成功须记录有限数值分数；失败保留真实状态与失败原因，分数未知用 null；最佳标记为布尔值，时间须可解析。轮次与顺序、分数方向、最佳候选和 run_summary 相互一致，不补造记录。自动解析不能代替任务身份、实际有效时长或探索质量复核。
 
-NOP 为推荐自检，可复用平台已有运行记录；如提交，保留同一次 Trial 的配置、结果、reward、日志及任务版本对应依据。无需新增一条长时 Agent 轨迹，详见 harbor-harness.md。
+必交一次当前题包版本的 NOP 自检，可复用平台已有同版本记录。保留同一次 Trial 的配置、结果、reward、日志及任务版本对应依据，确认构建和独立 Verifier 链路正常。无需新增一条长时 Agent 轨迹，详见 harbor-harness.md。
 
 ## 2. optimization_evidence 最小结构
 

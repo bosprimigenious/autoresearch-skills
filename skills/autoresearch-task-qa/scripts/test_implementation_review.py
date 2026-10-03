@@ -270,7 +270,7 @@ class ImplementationReviewTests(unittest.TestCase):
         self.assertLess(md.index("# 格式对齐建议"), md.index("# 质检结论：通过"))
         self.assertEqual(sum(line.startswith("| QA") for line in md.splitlines()), 21)
         self.assertTrue(report["review"]["completed"])
-        self.assertIn("Harbor 格式/接口：通过；已有 Trial 证据经人工关联后相互一致", md)
+        self.assertIn("Harbor 格式/接口：通过；已有 NOP 自检记录支持当前版本构建与运行可用", md)
         self.assertEqual(report["harbor"]["runtime_status"], "evidence_consistent")
 
     def test_write_report_creates_identical_txt_and_markdown(self):
@@ -427,14 +427,15 @@ class ImplementationReviewTests(unittest.TestCase):
         self.assertEqual(result["checks"][17]["status"], "fail")
         self.assertEqual(result["checks"][20]["status"], "fail")
 
-    def test_no_nop_does_not_fail_static_review(self):
+    def test_no_nop_blocks_qa17(self):
         import shutil
         shutil.rmtree(self.root / "run-a")
         review = self.review()
         from test_harbor_review import valid_review
         review["harbor"] = valid_review()
         result = qa.apply_review(self.report(), review, self.root)
-        self.assertEqual(result["checks"][16]["status"], "pass")
+        self.assertEqual(result["checks"][16]["status"], "fail")
+        self.assertEqual(result["summary"]["decision"], "FAIL")
         self.assertEqual(result["harbor"]["runtime_status"], "not_run")
         self.assertIn("动态运行未验证", qa.compact_markdown(result))
 

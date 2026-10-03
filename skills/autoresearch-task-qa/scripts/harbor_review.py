@@ -17,11 +17,11 @@ except ImportError:
     tomllib = None
 
 LIMIT = 4 * 1024 * 1024
-RULESET = "harbor-compatibility-v2"
+RULESET = "harbor-compatibility-v0.3.2"
 INTERNAL_SOURCE = "reference:packaged-harbor-evidence"
 OFFICIAL_SOURCE = "https://docs.harborframework.com/core-concepts/tasks/separate-verifier"
 H_IDS = [f"H{i:02d}" for i in range(1, 7)]
-H_TITLES = ["任务目录", "版本与配置", "环境与运行路径", "测试入口与 reward", "Job/Trial 调用配置", "Harness 运行证据"]
+H_TITLES = ["任务目录", "版本与配置", "环境与运行路径", "测试入口与 reward", "Job/Trial 调用配置", "NOP 自检记录"]
 
 
 def bounded_text(path):
@@ -312,6 +312,9 @@ def apply_review(current, review, root):
         if not isinstance(reason, str) or not reason.strip() or len(reason) > 220 or not isinstance(refs, list):
             raise ValueError(f"{check_id}: concise summary and evidence array required")
         paths = [resolve_ref(root, ref) for ref in refs]
+        if check_id == "H06" and not refs:
+            status = "fail"
+            reason = "缺少必交的当前题包版本 NOP 自检记录；请提交一次成功运行的记录，确认题包能构建并跑通独立 Verifier。"
         if status == "pass" and not refs:
             raise ValueError(f"{check_id}: passing requires evidence")
         if check_id in ("H01", "H02") and status == "pass":
@@ -364,14 +367,14 @@ def apply_review(current, review, root):
                 reason = "H03 需同时引用 Agent 与 Verifier 的 Dockerfile 并复核双镜像构建路径。"
         if check_id == "H06" and status == "pass":
             trial_evidence = validate_trial_evidence(root, refs, task_root, review.get("trial_task_binding"))
-            if trial_evidence["task_binding"]["status"] != "pass":
+            if trial_evidence["agent"] != "nop":
+                status = "fail"
+                reason = "必交一次 NOP 自检记录；当前提供的是其他 Agent 的 Trial，请补交当前题包版本的 NOP 记录。"
+            elif trial_evidence["task_binding"]["status"] != "pass":
                 status = "manual"
-                reason = "Trial 文件与奖励一致，但仅有名称或缺少本题版本映射；需补真实关联证据。"
+                reason = "NOP 运行记录一致，当前题包版本尚待确认；可引用已有配置、日志或专家说明完成关联。"
         if check_id == "H06" and status == "not_applicable" and refs:
             raise ValueError("H06: supplied runtime evidence must be reviewed, not skipped")
-        if check_id == "H06" and status in ("manual", "not_applicable", "fail") and not refs:
-            status = "not_applicable"
-            reason = "未提供推荐的 NOP/候选 Trial 自检证据；静态检查可单独完成，未验证动态运行。"
         final.append({"id": check_id, "title": H_TITLES[H_IDS.index(check_id)], "status": status,
                       "summary": reason, "evidence": refs})
     if final[4]["status"] == "not_applicable" and any(Path(re.sub(r":\d+$", "", ref.split("#", 1)[0])).name == "config.json" for ref in final[5]["evidence"]):
@@ -387,14 +390,16 @@ def apply_review(current, review, root):
     current["checks"] = final
     current["static_status"] = aggregate(final[:5])
     runtime = final[5]["status"]
-    current["runtime_status"] = {"pass": "evidence_consistent", "fail": "failed", "manual": "unverified", "not_applicable": "not_run"}[runtime]
+    current["runtime_status"] = "not_run" if not final[5]["evidence"] else {
+        "pass": "evidence_consistent", "fail": "failed", "manual": "unverified", "not_applicable": "not_run"
+    }[runtime]
     current["qa17_status"] = aggregate(final)
     return current
 
 
 def summary(harbor):
     static = {"pass": "通过", "fail": "不通过", "manual": "未完成"}[harbor["static_status"]]
-    runtime = {"not_run": "未提供推荐 Trial 自检，动态运行未验证（不代表端到端通过）",
-               "evidence_consistent": "已有 Trial 证据经人工关联后相互一致，未独立复跑或鉴定真伪",
-               "failed": "已提交 Trial 运行证据不通过", "unverified": "已提交 Trial 的运行或任务版本关联待核实"}[harbor["runtime_status"]]
+    runtime = {"not_run": "缺少必交 NOP 自检记录，动态运行未验证，QA17 不通过",
+               "evidence_consistent": "已有 NOP 自检记录支持当前版本构建与运行可用，未独立复跑或鉴定真伪",
+               "failed": "已提交自检记录不满足 NOP 运行要求", "unverified": "已提交 NOP 的运行或任务版本关联待核实"}[harbor["runtime_status"]]
     return f"Harbor 格式/接口：{static}；{runtime}。"

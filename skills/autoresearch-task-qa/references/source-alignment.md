@@ -1,13 +1,13 @@
 # 来源、版本与适用范围
 
-本公开版采用 QA schema v0.3.1。规则来源分为两类：目标版本的公开 Harbor 规范，以及经过脱敏后保留的任务验收契约。当前批准教程快照属于私有来源，不随公共 Skill 分发；其内部修订号、附件标识和协作链接不得写入公开文件，也不能作为外部用户可访问的证据。
+本公开版采用 QA schema v0.3.2。规则来源分为两类：目标版本的公开 Harbor 规范，以及经过脱敏后保留的任务验收契约。当前批准教程快照属于私有来源，不随公共 Skill 分发；其内部修订号、附件标识和协作链接不得写入公开文件，也不能作为外部用户可访问的证据。
 
 ## 当前契约
 
 - 对外验收所用的期次、题号和记录主键必须在提交时重新从当前期次的权威题库或验收表读取，并保留可复核的记录定位信息。旧期表、本地文件夹名、压缩包名或历史报告不能代替当期题号；权威表不可达或权限不足时，对外填报状态为 `INCOMPLETE`，不猜测、不沿用。
 - Agent 与 Verifier 分别以 `environment/Dockerfile`、`tests/Dockerfile` 构建，并显式设置 `[verifier] environment_mode = "separate"`。
 - 公开 Dev 评测必须供 Agent 迭代；最终私有 Hidden 材料留在独立 Verifier。Hidden 可采用预置、可复现生成或安全注入，但必须有材料、实现和真实调用证据，不能用空目录或目录名代替。
-- NOP 是推荐自检而非必交项。缺少 NOP 不单独失败；一旦提供 NOP 或其他 Trial，就必须核对同一 Trial 的配置、结果、reward、日志、任务版本和 separate 运行证据。NOP 分数本身不决定结论。
+- 必须提交一次当前题包版本的 NOP 自检记录。核对同一 Trial 的配置、结果、reward、日志、任务版本和 separate 运行证据；缺失时 H06 与 QA17 失败。可复用平台已有的同版本记录，NOP 分数本身不决定结论。
 - 源码 `solution/` 是可选 Oracle；它与 Agent 的运行时提交目录不是同一概念。
 - 两条 Agent 轨迹每轮包含八字段：`round`、`policy_name`、`method_summary`、`status`、`score`、`failure_reason`、`retained_best`、`time`。旧两字段轨迹不再满足契约，人工填写 pass 也不能覆盖格式反证。
 
