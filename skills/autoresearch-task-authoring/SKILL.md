@@ -14,7 +14,7 @@ description: 从论文与代码仓设计可交付的 AutoResearch 工程题，�
 5. 将作者材料、参赛者 workspace 和优化证据分开。Docker COPY、WORKDIR、入口与选定的平台 profile 必须形成一条可执行路径。
 6. 先做小规模成对实跑，再决定是否值得开展双轨迹长跑。完成 Baseline/Reference、效应/噪声和独立复算后过 `pilot` 门；完成双镜像、Hidden 隔离和目标 Harness trial 后过 `container` 门。没有动态证据时明确写“未验证运行”。
 7. 双轨迹分别保存正式血缘与失败轮，完成机外快照和恢复演练后过 `long_run` 门。失败必须用新 trial 修复，不覆盖旧 receipt 或拼接不同轮次证据。
-8. 交付前调用 `autoresearch-task-qa` 做独立静态审查；研究质量、实现或 Harbor 门有失败即 NOT READY。审查报告是 `release` 门的一项输入，不能由作者自报结论替代。
+8. 交付前使用 `autoresearch-qa-skills-0.3.2` 做双路独立本地质检。冻结唯一完整提交包 ZIP 及 SHA256；两种不同 AI 分别新建无历史上下文的会话，每个会话只发该 ZIP。不同模型家族优先，同类 AI 的不同版本也可以。不附带散文件、旧报告、作者解释或另一 AI 的结论。两路首轮质检均须完整实测；任一路命中硬失败或分歧未闭环即 NOT READY。审查报告是 `release` 门的输入，不能由作者原会话内自报结论替代。
 9. 开源或外发前对主包、QA/self-check、轨迹和证据附件分别做隐私与可移植性检查；生成报告不得保留作者 home、凭据值或私有文件链接。白名单 manifest、独立 QA 和逐附件隐私报告齐全后才可通过 `release` 门。
 
 输出至少包括题面、接口、Starter、Baseline、Reference、评分器、冻结清单、证据清单、构建说明和验收命令。

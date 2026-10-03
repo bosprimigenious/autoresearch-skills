@@ -102,7 +102,7 @@ paper-discovery
 3. 用 `baseline-quality` 冻结公平的正式对照。
 4. 用 `task-authoring` 依次通过 selection、pilot、container、long-run 和 release 门。
 5. 在需要双轨迹、付费 GPU 或服务器 Docker 时使用 `run-isolation`；先小规模验证，再购买连续容量。
-6. 交付前由 `task-qa` 独立检查。作者自测不能替代独立 QA。
+6. 交付前使用最新质检包 `autoresearch-qa-skills-0.3.2` 做双路独立本地质检。每路都必须开一个全新会话，只发送同一个完整提交包 ZIP，不带散文件、旧报告或作者解释。两路使用不同 AI；不同模型家族优先，同类 AI 的不同版本也可以。作者原会话内的自测不能替代这两次干净上下文实测。
 7. 需要登记外部状态时，用 `feishu-three-table` 从当期权威题号开始，分别处理领题、提交/验收和组长初检；QA 通过不自动等于外部表已回填。
 8. 会话中断或更换 Agent 时，用 `conversation-handoff` 保存可继续执行的状态。
 
@@ -132,7 +132,7 @@ optimization-surface → baseline-quality → task-authoring → task-qa
 
 ### 4. 只验收一个现成交付包
 
-使用 `autoresearch-task-qa`，保持只读：
+使用 `autoresearch-qa-skills-0.3.2` 中的 `autoresearch-task-qa`，保持只读。本地自检必须使用两个相互隔离的新会话，每个会话只提供同一 SHA256 的完整 ZIP，并由两种不同 AI（同类不同版本可接受）各自完成一次完整质检：
 
 ```sh
 python3 skills/autoresearch-task-qa/scripts/audit_task.py \
