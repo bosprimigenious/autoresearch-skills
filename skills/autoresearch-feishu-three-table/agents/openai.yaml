@@ -1,0 +1,4 @@
+interface:
+  display_name: "AutoResearch Feishu Three-Table Workflow"
+  short_description: "Safely reconcile claim, submission, and lead-review tables"
+  default_prompt: "Use $autoresearch-feishu-three-table to reconcile an authorized AutoResearch claim, submission/acceptance, or lead-review record with schema checks, evidence gates, and read-back verification."
