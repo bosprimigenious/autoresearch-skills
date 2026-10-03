@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/bosprimigenious/autoresearch-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/bosprimigenious/autoresearch-skills/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-7-6d28d9.svg)](skills)
+[![Agent Skills](https://img.shields.io/badge/Agent%20Skills-8-6d28d9.svg)](skills)
 [![Privacy Gate](https://img.shields.io/badge/privacy-fail--closed-0f766e.svg)](scripts/privacy_scan.py)
 
 AutoResearch Skills 不是一组需要整段复制的 prompt。每个 skill 都是带清晰触发条件、执行边界、参考资料和可选脚本的独立能力单元；Agent 在任务匹配时读取相应 `SKILL.md`，而不是一次加载整个仓库。
@@ -61,6 +61,8 @@ ln -s "$PWD/skills/autoresearch-task-qa" \
 使用 $autoresearch-run-isolation，为两条独立 Agent 轨迹设计 Docker、GPU 租赁、恢复和证据合同；先完成低成本 pilot，不要直接启动长跑。
 
 使用 $autoresearch-task-qa，只读审查这个提交 ZIP。静态结论、已有运行证据和未复跑项必须分开报告。
+
+使用 $autoresearch-feishu-three-table，在当前已授权的飞书资源中核对当期题号，再填写领题、提交/验收或组长初检记录；权限不足时只生成待填草稿，不猜字段或绕过权限。
 ```
 
 Skill 提供的是决策规则和工作流，不会扩大任务授权。安装 QA skill 不等于允许它运行不受信容器；安装运行隔离 skill 也不等于允许购买 GPU、调用付费 API 或修改远端平台状态。
@@ -75,6 +77,7 @@ Skill 提供的是决策规则和工作流，不会扩大任务授权。安装 Q
 | [`autoresearch-task-authoring`](skills/autoresearch-task-authoring) | 将论文与代码仓转化为可交付研究题 | Starter、Baseline、Reference、评分器、冻结合同和五阶段 QA 证据 | selection、pilot、container、long-run、release 任一累计门失败即暂停下游工作 |
 | [`autoresearch-run-isolation`](skills/autoresearch-run-isolation) | 设计双轨运行、Docker、GPU/API 成本、恢复与血缘 | 运行合同、容量计划、隔离拓扑、快照与 lineage | pilot 未过、容量风险不可接受或恢复证据缺失时停止消费 |
 | [`autoresearch-task-qa`](skills/autoresearch-task-qa) | 对任务目录或 ZIP 做独立只读审查 | TXT、Markdown、JSON 报告及可执行整改项 | 研究质量、实现、Harbor、隐私或证据门失败即 `NOT READY` |
+| [`autoresearch-feishu-three-table`](skills/autoresearch-feishu-three-table) | 在授权的飞书多维表格中流转领题、完成提交/验收和组长初检 | 当期题号核验、最小字段变更、权限交接草稿与写后回读 | schema/权限不可验证、跨表身份冲突或回读不一致时停止 |
 | [`autoresearch-conversation-handoff`](skills/autoresearch-conversation-handoff) | 长会话收尾、切换 Agent、恢复中断工作 | 已验证事实、失败、阻塞、文件入口和下一步命令 | 对话陈述与现场证据不一致时，以现场为准并保留差异 |
 
 ## 推荐应用方式
@@ -88,6 +91,7 @@ paper-discovery
   → task-authoring
   → run-isolation
   → task-qa
+  → feishu-three-table
   → conversation-handoff
 ```
 
@@ -99,7 +103,8 @@ paper-discovery
 4. 用 `task-authoring` 依次通过 selection、pilot、container、long-run 和 release 门。
 5. 在需要双轨迹、付费 GPU 或服务器 Docker 时使用 `run-isolation`；先小规模验证，再购买连续容量。
 6. 交付前由 `task-qa` 独立检查。作者自测不能替代独立 QA。
-7. 会话中断或更换 Agent 时，用 `conversation-handoff` 保存可继续执行的状态。
+7. 需要登记外部状态时，用 `feishu-three-table` 从当期权威题号开始，分别处理领题、提交/验收和组长初检；QA 通过不自动等于外部表已回填。
+8. 会话中断或更换 Agent 时，用 `conversation-handoff` 保存可继续执行的状态。
 
 ### 2. 已有题目，只想避免昂贵返修
 
