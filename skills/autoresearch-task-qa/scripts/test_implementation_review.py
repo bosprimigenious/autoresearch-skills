@@ -103,7 +103,8 @@ class ImplementationReviewTests(unittest.TestCase):
         runtime = {"exception_reason": "", "trajectories": [
             {"name": row["name"], "source_path": row["source_path"], "effective_seconds": 36000,
              "duration_evidence": row["source_path"] + "#.duration_seconds",
-             "evidence": [row["source_path"]], "time_accounting": "总历时12h，扣除2h安装和排队后有效10h。"}
+             "evidence": [row["source_path"]], "time_accounting": "总历时12h，扣除2h安装和排队后有效10h。",
+             "best_method_revalidated": True, "best_method_evidence": [row["source_path"]]}
             for row in overview["trajectories"]]}
         harbor_review = valid_review()
         harbor_review["trial_task_binding"] = {"summary": "Synthetic fixtures refer to this test task, not actual execution.",
@@ -174,6 +175,15 @@ class ImplementationReviewTests(unittest.TestCase):
         self.assertEqual(report["checks"][15]["status"], "fail")
         self.assertEqual(report["summary"]["decision"], "FAIL")
         self.assertIn("大于 collector", report["checks"][15]["summary"])
+
+    def test_ten_hour_runtime_still_requires_best_method_revalidation(self):
+        review = self.review()
+        del review["runtime_review"]["trajectories"][0]["best_method_revalidated"]
+        del review["runtime_review"]["trajectories"][0]["best_method_evidence"]
+        report = qa.apply_review(self.report(), review, self.root)
+        self.assertEqual(report["checks"][15]["status"], "manual")
+        self.assertEqual(report["summary"]["decision"], "INCOMPLETE")
+        self.assertIn("最终方法当前版本", report["checks"][15]["summary"])
 
     def test_runtime_requires_collector_duration_evidence(self):
         review = self.review()
@@ -514,7 +524,7 @@ class ImplementationReviewTests(unittest.TestCase):
         self.assertEqual(report["summary"]["decision"], "PASS")
         self.assertEqual(report["source"]["kind"], "zip")
         self.assertEqual(report["qa_run"]["artifact_sha256"], report["source"]["sha256"])
-        self.assertEqual(report["qa_run"]["skill"], {"name": "autoresearch-qa-skills", "version": "0.3.2"})
+        self.assertEqual(report["qa_run"]["skill"], {"name": "autoresearch-qa-skills", "version": "0.3.3"})
         self.assertEqual(report["qa_run"]["reviewer"]["session_id"], "fresh-session-a")
         with self.assertRaises(SystemExit):
             qa.main(args)

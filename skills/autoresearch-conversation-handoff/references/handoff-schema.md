@@ -9,4 +9,6 @@
 7. **存储**：必须保留、已远端备份、可重建、禁止进 Git 的大文件。
 8. **下一步**：可执行命令、顺序、反序风险、完成标准。
 
+远端付费任务另加一行生命周期矩阵：`controller_stopped`、`workers_drained`、`evidence_pulled`、`local_hash_verified`、`os_shutdown`、`provider_billing_stopped`。每项只填 `VERIFIED / UNVERIFIED / FAILED` 和脱敏证据引用；不得用一个状态推导另一个状态。
+
 数字必须来自最终报告或现场回读；说明文件与 JSON 冲突时先修复再交接。

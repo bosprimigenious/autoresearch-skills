@@ -10,7 +10,7 @@
 | long_run | 两条独立血缘、闭合有效时长、机外快照与恢复 probe | 补真实运行；不拼接旧轮次 |
 | release | 两份独立 QA 报告、机器聚合共识、逐附件隐私报告、白名单 manifest | 任一失败即 NOT READY |
 
-非发布里程碑的 `scripts/authoring_gate.py` 只检查证据引用是否齐全。`release` 门会读取引用的 JSON、重新计算 SHA256，并核对两份 QA 是否来自同一 ZIP、不同 AI 与不同新会话，是否都由 `autoresearch-qa-skills-0.3.2` 判为 `PASS`，以及共识、隐私报告和 manifest 是否绑定同一组摘要。它不能证明人类确实没有向新会话提供额外上下文，因此 `clean_context=true` 是可追责声明，不是自动取证；实际操作仍须严格做到每个新会话只发送一个完整 ZIP。
+非发布里程碑的 `scripts/authoring_gate.py` 只检查证据引用是否齐全。`release` 门会读取引用的 JSON、重新计算 SHA256，并核对两份 QA 是否来自同一 ZIP、不同 AI 与不同新会话，是否都由 `autoresearch-qa-skills-0.3.3` 判为 `PASS`，以及共识、隐私报告和 manifest 是否绑定同一组摘要。它不能证明人类确实没有向新会话提供额外上下文，因此 `clean_context=true` 是可追责声明，不是自动取证；实际操作仍须严格做到每个新会话只发送一个完整 ZIP。
 
 ## 为什么要前移
 

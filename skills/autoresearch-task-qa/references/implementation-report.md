@@ -74,7 +74,7 @@ G03另填assessment：
       ]
     }
 
-上例仅展示一个条目，真实输入必须恰好两项。默认两条各≥36000秒。两条各≥25200秒但任一不足10h时，首先要求exception_eligibility.non_training=true且short_iterations=true，basis解释任务不含训练/微调及实际典型单轮耗时，evidence引用源码/协议和耗时记录；随后要求exception_reason、每条≥3个有效方法闭环、具体后续方向、best_method_revalidated=true与复验证据齐全，才通过7h例外。队列/安装/构建故障/阻塞扣除依据要说明；不可把墙钟起止直接当有效时长。涉及训练/微调或迭代不短且任一不足10h时为fail；任何轨迹不足7h为fail；缺实际时长或例外资格证据为manual。两条都达10h时不强制填写例外资格。不得凭“非训练”三个字推定迭代很短，也不新增统一几分钟的阈值。旧observed_runtime_seconds和单条6h规则不再覆盖判定；runtime_candidates仅为收集观察。
+上例仅展示一个条目，真实输入必须恰好两项。默认两条各≥36000秒。每条无论时长是否达标，都必须填写best_method_revalidated与best_method_evidence；证据要能把最终文件当前SHA、冻结评测合同和独立结果对应起来，历史方法分数不能转移到净化或修复后的SHA。两条各≥25200秒但任一不足10h时，首先要求exception_eligibility.non_training=true且short_iterations=true，basis解释任务不含训练/微调及实际典型单轮耗时，evidence引用源码/协议和耗时记录；随后还要求exception_reason、每条≥3个有效方法闭环和具体后续方向，才通过7h例外。队列/安装/构建故障/阻塞扣除依据要说明；不可把墙钟起止直接当有效时长。涉及训练/微调或迭代不短且任一不足10h时为fail；任何轨迹不足7h为fail；缺实际时长、最终方法复验或例外资格证据为manual。两条都达10h时不强制填写例外资格。不得凭“非训练”三个字推定迭代很短，也不新增统一几分钟的阈值。旧observed_runtime_seconds和单条6h规则不再覆盖判定；runtime_candidates仅为收集观察。
 
 ## harbor 与 Docker
 

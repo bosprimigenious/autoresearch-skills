@@ -236,6 +236,11 @@ def assess_runtime(review, trajectories, runtime_candidates, root, validate_evid
             raise ValueError(f"runtime_review {name}: effective_method_cycles must be a nonnegative integer or null")
         best_refs = row.get("best_method_evidence", [])
         validate_evidence(root, best_refs, f"runtime_review {name} best_method")
+        if row.get("best_method_revalidated") is False:
+            failures.append(name + "最终方法当前版本的独立复验失败")
+        elif row.get("best_method_revalidated") is not True or not best_refs:
+            missing.append(name + "缺少最终方法当前版本的独立复验证据")
+        refs.extend(best_refs)
         normalized.append(row)
     known = all(finite(row.get("effective_seconds")) for row in rows)
     standard = known and all(row["effective_seconds"] >= 10 * 3600 for row in rows)
@@ -270,18 +275,13 @@ def assess_runtime(review, trajectories, runtime_candidates, root, validate_evid
                 failures.append(row["name"] + "有效方法闭环少于 3 个，未满足时长例外条件")
             if not text(row.get("next_direction")):
                 missing.append(row["name"] + "缺少可继续探索的具体方向")
-            if row.get("best_method_revalidated") is False:
-                failures.append(row["name"] + "最优方法尚未复验，未满足时长例外条件")
-            elif row.get("best_method_revalidated") is not True or not row.get("best_method_evidence"):
-                missing.append(row["name"] + "缺少最优方法复验证据")
-            refs.extend(row.get("best_method_evidence", []))
     status = "fail" if failures else "manual" if missing else "pass"
     summary = "；".join(failures + missing) if status != "pass" else (
-        "两条轨迹均有至少 10h 有效迭代证据，已说明扣除排队、安装和故障时段。" if standard else
+        "两条轨迹均有至少 10h 有效迭代证据，已说明扣除排队、安装和故障时段，且最终方法当前版本的独立复验证据齐全。" if standard else
         "已确认任务完全不涉及训练或微调且单轮迭代很短；两条轨迹均至少 7h，资格依据、例外理由、各 3 个方法闭环、继续方向和最优方法复验证据齐全。")
     remediation = ("该任务不符合 7h 例外资格；请使两条轨迹分别达到至少 10h 有效迭代，并补齐扣除排队、安装和故障时段的核算。" if ineligible else
-                   "针对上述轨迹补齐有效时段核算，每条达到 10h；仅在完全不涉及训练或微调且单轮迭代很短时，才可凭资格依据采用至少 7h 的例外，并提交具体理由、每条至少 3 个有效方法闭环、后续方向及最优方法复验。")
+                   "针对上述轨迹补齐有效时段核算，每条达到 10h，并提交最终方法当前版本在冻结合同下的独立复验；仅在完全不涉及训练或微调且单轮迭代很短时，才可凭资格依据采用至少 7h 的例外，并提交具体理由、每条至少 3 个有效方法闭环及后续方向。")
     return {"exception_reason": review.get("exception_reason", ""), "exception_eligibility": eligibility, "trajectories": normalized,
             "status": status, "summary": summary, "evidence": list(dict.fromkeys(refs)),
             "remediation": "" if status == "pass" else remediation,
-            "acceptance_evidence": "" if status == "pass" else "两条轨迹各自的起止/有效时段日志、被排除时段及理由；如申请 7h 例外，附无训练/微调的实现证据、典型单轮耗时及原始日志、方法闭环与最优方法复验记录。"}
+            "acceptance_evidence": "" if status == "pass" else "两条轨迹各自的起止/有效时段日志、被排除时段及理由，以及最终方法当前 SHA 在冻结合同下的独立复验；如申请 7h 例外，另附无训练/微调的实现证据、典型单轮耗时及原始日志和方法闭环。"}

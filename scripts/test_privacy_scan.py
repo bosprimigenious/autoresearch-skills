@@ -73,6 +73,16 @@ class PrivacyScanTests(unittest.TestCase):
             self.assertNotIn(private_value, output)
             self.assertNotIn("id_ed25519", output)
 
+    def test_transient_cache_members_in_release_archive_are_blocked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with zipfile.ZipFile(root / "submission.zip", "w") as archive:
+                archive.writestr("package/__pycache__/method.cpython-312.pyc", b"bytecode")
+                archive.writestr("package/._manifest.json", b"metadata")
+            findings = scan(root)
+            transient = [item for item in findings if item.code == "TRANSIENT_ARCHIVE_ARTIFACT"]
+            self.assertEqual(len(transient), 2)
+
     def test_capability_member_name_is_redacted(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

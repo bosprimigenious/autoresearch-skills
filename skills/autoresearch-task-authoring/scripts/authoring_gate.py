@@ -14,7 +14,7 @@ from typing import Any
 PLACEHOLDERS = {"", "todo", "tbd", "unknown", "none", "n/a"}
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 QA_SKILL_NAME = "autoresearch-qa-skills"
-QA_SKILL_VERSION = "0.3.2"
+QA_SKILL_VERSION = "0.3.3"
 STAGES = {
     "selection": (
         "source_identity", "license_evidence", "optimization_surface", "duplicate_registry_evidence",

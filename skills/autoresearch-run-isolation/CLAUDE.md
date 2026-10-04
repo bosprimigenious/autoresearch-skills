@@ -2,7 +2,7 @@
 
 > 为 AutoResearch 的双 Agent 轨迹、付费 GPU 长跑、Docker 执行、可信评测与恢复建立共享协议、成本决策和隔离边界。用于小时/包日选择、启动或恢复 campaign、设计证据与防止题目或轨迹串用；不替代具体任务算法或最终平台 QA。
 
-先读 [协议与隔离不变量](references/protocol-and-isolation.md)。涉及租卡先读 [成本与容量](references/cost-and-capacity.md)；涉及容器或 Harbor 再读 [Docker 执行与 Harness 边界](references/docker-and-harness.md)。优先复用成熟运行协议；每题只实现任务适配器与可信评测器。
+先读 [协议与隔离不变量](references/protocol-and-isolation.md)。涉及租卡先读 [成本与容量](references/cost-and-capacity.md)；涉及容器或 Harbor 再读 [Docker 执行与 Harness 边界](references/docker-and-harness.md)；准备停机、释放实例或冻结最终包时再读 [最终化与关机](references/finalization-and-shutdown.md)。优先复用成熟运行协议；每题只实现任务适配器与可信评测器。
 
 运行前冻结任务树并计算逐文件哈希；两条 Agent 轨迹使用同一公共任务摘要，但使用独立 workspace、控制目录、端口、上下文、凭据和轨迹目录。候选进程只能看到 Starter 与公开资产，Reference、专家证据和另一条轨迹不得进入其挂载范围。模型名称与 provider 是任务参数，不写死为某一家服务。
 

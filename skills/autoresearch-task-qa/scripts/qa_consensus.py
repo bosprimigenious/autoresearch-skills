@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 SKILL_NAME = "autoresearch-qa-skills"
-SKILL_VERSION = "0.3.2"
+SKILL_VERSION = "0.3.3"
 
 
 def sha256_file(path: Path) -> str:

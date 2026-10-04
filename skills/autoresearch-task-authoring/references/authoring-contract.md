@@ -30,7 +30,7 @@
 - 长跑前先用低成本 pilot 验证完整链路和估计噪声；小卡只用于功能与缩规模调试，不能替代目标 GPU/Harness 的正式证据。
 - 若目标任务需要 GPU，必须记录目标 backend 当前版本的支持证据与一次真实运行结果；普通 Docker Compose 能启动不等于平台 GPU 验收通过。
 - 冻结唯一完整提交包 ZIP 及其 SHA256，不把散文件或已解压目录作为本地质检输入。
-- 使用 `autoresearch-qa-skills-0.3.2`，由两种不同 AI（或同类 AI 的不同版本）在彼此隔离的新会话中，对同一 ZIP 各自完成一次质检实测。每个会话只提供该 ZIP，不提供旧 QA 报告或作者引导。
+- 使用 `autoresearch-qa-skills-0.3.3`，由两种不同 AI（或同类 AI 的不同版本）在彼此隔离的新会话中，对同一 ZIP 各自完成一次质检实测。每个会话只提供该 ZIP，不提供旧 QA 报告或作者引导。
 - 两路 QA 均通过且结论一致；有分歧时回到 ZIP 内证据和对应检查项闭环，不以多数投票掩盖硬失败。
 
 ## Release 证据 schema
@@ -53,7 +53,7 @@
 
 - `source.kind` 为 `zip`，两份 `source.sha256` 相同且是完整 64 位 SHA256；
 - `summary.decision` 为 `PASS`；
-- `qa_run.skill` 为 `{"name":"autoresearch-qa-skills","version":"0.3.2"}`；
+- `qa_run.skill` 为 `{"name":"autoresearch-qa-skills","version":"0.3.3"}`；
 - `qa_run.input_kind` 为 `zip`，`qa_run.artifact_sha256` 等于 `source.sha256`；
 - `qa_run.clean_context` 为布尔值 `true`；
 - `qa_run.reviewer` 同时记录非空的 `provider`、`model`、`version`、`session_id`。两份报告的 `(provider, model, version)` 三元组和 `session_id` 都必须不同。

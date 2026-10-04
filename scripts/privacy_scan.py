@@ -85,6 +85,8 @@ SENSITIVE_EXACT_NAMES = {
 }
 SENSITIVE_SUFFIXES = {".key", ".p12", ".pfx", ".pem"}
 SAFE_FILENAME_SUFFIXES = {".example", ".sample", ".template"}
+TRANSIENT_ARCHIVE_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
+TRANSIENT_ARCHIVE_SUFFIXES = {".pyc", ".pyo"}
 PLACEHOLDER_WORDS = {
     "changeme", "dummy", "example", "fake", "placeholder", "redacted", "replace-me",
     "false", "none", "null", "replace_me", "sample", "test", "todo", "true", "your-api-key",
@@ -197,6 +199,14 @@ def _scan_name(name: str, path: Path, member: str | None = None) -> list[Finding
         findings.append(Finding("UNSAFE_ARCHIVE_PATH" if member else "UNSAFE_PATH", path, 0, member))
     if _is_sensitive_name(normalized):
         findings.append(Finding("SENSITIVE_FILENAME", path, 0, member))
+    basename = PurePosixPath(normalized).name
+    if member is not None and (
+        any(part in TRANSIENT_ARCHIVE_PARTS for part in parts)
+        or basename.endswith(tuple(TRANSIENT_ARCHIVE_SUFFIXES))
+        or basename == ".DS_Store"
+        or basename.startswith("._")
+    ):
+        findings.append(Finding("TRANSIENT_ARCHIVE_ARTIFACT", path, 0, member))
     findings.extend(_scan_text(normalized, path, member))
     return findings
 

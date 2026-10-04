@@ -59,7 +59,7 @@ class ReleaseGateTests(unittest.TestCase):
             "source": {"kind": "zip", "sha256": self.artifact_hash},
             "summary": {"decision": "PASS"},
             "qa_run": {
-                "skill": {"name": "autoresearch-qa-skills", "version": "0.3.2"},
+                "skill": {"name": "autoresearch-qa-skills", "version": "0.3.3"},
                 "artifact_sha256": self.artifact_hash,
                 "input_kind": "zip",
                 "clean_context": True,
@@ -92,7 +92,7 @@ class ReleaseGateTests(unittest.TestCase):
             "consensus.json",
             {
                 "status": "PASS",
-                "skill": {"name": "autoresearch-qa-skills", "version": "0.3.2"},
+                "skill": {"name": "autoresearch-qa-skills", "version": "0.3.3"},
                 "artifact_sha256": self.artifact_hash,
                 "report_sha256s": [digest(path) for path in report_paths],
                 "unresolved_disagreements": disagreements or [],

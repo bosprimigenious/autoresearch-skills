@@ -41,7 +41,7 @@ provenance bound to the inspected archive:
   "source": {"kind": "zip", "sha256": "..."},
   "summary": {"decision": "PASS|FAIL|INCOMPLETE"},
   "qa_run": {
-    "skill": {"name": "autoresearch-qa-skills", "version": "0.3.2"},
+    "skill": {"name": "autoresearch-qa-skills", "version": "0.3.3"},
     "artifact_sha256": "same as source.sha256",
     "input_kind": "zip",
     "clean_context": true,
