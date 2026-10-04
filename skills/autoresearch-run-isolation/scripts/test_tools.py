@@ -46,6 +46,9 @@ class ToolTests(unittest.TestCase):
             "backend_gpu_evidence": "official capability reference and planned real trial",
             "persistent_snapshot": "object storage snapshot with hashes",
             "stop_loss": "stop after two failed pilots",
+            "liveness_protocol": "controller, RPC, receipt and remote job deadline",
+            "provider_failure_policy": "hard authorization errors stop with zero credit",
+            "durable_evaluator_reconciliation": "reuse completed job before retry",
         }
         self.assertEqual(validate_contract(contract), [])
 
@@ -61,6 +64,9 @@ class ToolTests(unittest.TestCase):
             "target_harness": "pinned backend",
             "persistent_snapshot": "off-host snapshot",
             "stop_loss": "stop after failed pilot",
+            "liveness_protocol": "controller, RPC, receipt and remote job deadline",
+            "provider_failure_policy": "hard authorization errors stop with zero credit",
+            "durable_evaluator_reconciliation": "reuse completed job before retry",
             "server_provides_docker": True,
         }
         errors = validate_contract(contract)
@@ -81,7 +87,72 @@ class ToolTests(unittest.TestCase):
             usage.return_value.free = 100 * 1024**3
             report = inspect_host(False, 50, runner)
         self.assertTrue(report["static_ready"])
+        self.assertIsNone(report["dynamic_ready"])
         self.assertIn("do not prove", report["acceptance_boundary"])
+
+    def test_docker_host_preflight_runs_pinned_container_gpu_probe(self):
+        image = "registry.example/probe@sha256:" + "a" * 64
+        outputs = {
+            ("docker", "version", "--format", "{{json .Server}}"): '{"Version":"1"}',
+            ("docker", "compose", "version", "--short"): "2.0",
+            ("docker", "info", "--format", "{{json .}}"): (
+                '{"DockerRootDir":"/tmp","Runtimes":{"nvidia":{},"runc":{}}}'
+            ),
+            ("nvidia-smi", "-L"): "GPU 0: Generic GPU",
+            ("docker", "image", "inspect", image): "[]",
+            (
+                "docker", "run", "--rm", "--pull=never", "--gpus", "all",
+                image, "nvidia-smi", "-L",
+            ): "GPU 0: Generic GPU",
+        }
+
+        def runner(argv):
+            return subprocess.CompletedProcess(argv, 0, outputs[tuple(argv)], "")
+
+        with patch("docker_host_preflight.shutil.disk_usage") as usage:
+            usage.return_value.free = 100 * 1024**3
+            report = inspect_host(True, 50, runner, image)
+        self.assertTrue(report["static_ready"])
+        self.assertTrue(report["dynamic_ready"])
+        self.assertEqual(report["dynamic_findings"][-1]["code"], "container_gpu")
+
+    def test_docker_host_preflight_rejects_floating_probe_image(self):
+        outputs = {
+            ("docker", "version", "--format", "{{json .Server}}"): '{"Version":"1"}',
+            ("docker", "compose", "version", "--short"): "2.0",
+            ("docker", "info", "--format", "{{json .}}"): (
+                '{"DockerRootDir":"/tmp","Runtimes":{"nvidia":{},"runc":{}}}'
+            ),
+            ("nvidia-smi", "-L"): "GPU 0: Generic GPU",
+        }
+
+        def runner(argv):
+            return subprocess.CompletedProcess(argv, 0, outputs[tuple(argv)], "")
+
+        with patch("docker_host_preflight.shutil.disk_usage") as usage:
+            usage.return_value.free = 100 * 1024**3
+            report = inspect_host(True, 50, runner, "registry.example/probe:latest")
+        self.assertTrue(report["static_ready"])
+        self.assertFalse(report["dynamic_ready"])
+
+    def test_docker_host_preflight_rejects_probe_without_gpu_contract(self):
+        outputs = {
+            ("docker", "version", "--format", "{{json .Server}}"): '{"Version":"1"}',
+            ("docker", "compose", "version", "--short"): "2.0",
+            ("docker", "info", "--format", "{{json .}}"): (
+                '{"DockerRootDir":"/tmp","Runtimes":{"nvidia":{},"runc":{}}}'
+            ),
+        }
+
+        def runner(argv):
+            return subprocess.CompletedProcess(argv, 0, outputs[tuple(argv)], "")
+
+        with patch("docker_host_preflight.shutil.disk_usage") as usage:
+            usage.return_value.free = 100 * 1024**3
+            report = inspect_host(False, 50, runner, "sha256:" + "a" * 64)
+        self.assertTrue(report["static_ready"])
+        self.assertFalse(report["dynamic_ready"])
+        self.assertEqual(report["dynamic_findings"][0]["code"], "gpu_probe_contract")
 
     def test_lineage_rejects_spliced_receipt(self):
         run = self._run()

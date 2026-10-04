@@ -524,7 +524,7 @@ class ImplementationReviewTests(unittest.TestCase):
         self.assertEqual(report["summary"]["decision"], "PASS")
         self.assertEqual(report["source"]["kind"], "zip")
         self.assertEqual(report["qa_run"]["artifact_sha256"], report["source"]["sha256"])
-        self.assertEqual(report["qa_run"]["skill"], {"name": "autoresearch-qa-skills", "version": "0.3.3"})
+        self.assertEqual(report["qa_run"]["skill"], {"name": "autoresearch-qa-skills", "version": "0.3.4"})
         self.assertEqual(report["qa_run"]["reviewer"]["session_id"], "fresh-session-a")
         with self.assertRaises(SystemExit):
             qa.main(args)

@@ -21,7 +21,7 @@ class ConsensusTests(unittest.TestCase):
             "source": {"kind": "zip", "sha256": self.artifact},
             "summary": {"decision": decision},
             "qa_run": {
-                "skill": {"name": "autoresearch-qa-skills", "version": "0.3.3"},
+                "skill": {"name": "autoresearch-qa-skills", "version": "0.3.4"},
                 "artifact_sha256": self.artifact,
                 "input_kind": "zip",
                 "clean_context": True,

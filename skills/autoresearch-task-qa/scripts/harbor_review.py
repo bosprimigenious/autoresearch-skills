@@ -17,7 +17,7 @@ except ImportError:
     tomllib = None
 
 LIMIT = 4 * 1024 * 1024
-RULESET = "harbor-compatibility-v0.3.3"
+RULESET = "harbor-compatibility-v0.3.4"
 INTERNAL_SOURCE = "reference:packaged-harbor-evidence"
 OFFICIAL_SOURCE = "https://docs.harborframework.com/core-concepts/tasks/separate-verifier"
 H_IDS = [f"H{i:02d}" for i in range(1, 7)]

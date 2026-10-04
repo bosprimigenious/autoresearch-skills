@@ -1,6 +1,6 @@
 # AutoResearch Skills
 
-当前 QA 发布版本：`autoresearch-qa-skills-0.3.3`。版本号的唯一来源是仓库根目录的 [`VERSION`](VERSION)。
+当前 QA 发布版本：`autoresearch-qa-skills-0.3.4`。版本号的唯一来源是仓库根目录的 [`VERSION`](VERSION)。
 
 面向研究型 Coding Agent 的可复用工作流：从论文发现、题目设计和可信 Baseline，到双轨运行、成本控制、质量验收与可执行交接。
 
@@ -37,10 +37,10 @@ npx -y skills add bosprimigenious/autoresearch-skills \
 npx -y skills add bosprimigenious/autoresearch-skills --all
 ```
 
-生产质检应固定到发布标签，不能静默跟随 `main`。例如，在 `v0.3.3` 标签发布后使用：
+生产质检应固定到发布标签，不能静默跟随 `main`。例如，在 `v0.3.4` 标签发布后使用：
 
 ```sh
-git clone --branch v0.3.3 --depth 1 \
+git clone --branch v0.3.4 --depth 1 \
   https://github.com/bosprimigenious/autoresearch-skills.git
 ```
 
@@ -62,22 +62,22 @@ ln -s "$PWD/skills/autoresearch-task-qa" \
 
 ### QA 发布包
 
-`autoresearch-qa-skills-0.3.3` 是发布集合名，不是把两个 skill 塞进同一个 ZIP 的文件名。一次构建必须生成两个可独立安装的单-skill 包：
+`autoresearch-qa-skills-0.3.4` 是发布集合名，不是把两个 skill 塞进同一个 ZIP 的文件名。一次构建必须生成两个可独立安装的单-skill 包：
 
-- `autoresearch-task-qa-0.3.3.zip`
-- `autoresearch-baseline-quality-0.3.3.zip`
+- `autoresearch-task-qa-0.3.4.zip`
+- `autoresearch-baseline-quality-0.3.4.zip`
 
 每个 ZIP 只允许一个同名顶层目录和一份顶层 `SKILL.md`。旧式 `autoresearch-qa-skills.zip` 若同时包含两个 skill，结构门禁会拒绝它。构建并复核：
 
 ```sh
 python3 scripts/build_qa_release.py --out-dir dist
 python3 scripts/verify_skill_archive.py \
-  dist/autoresearch-task-qa-0.3.3.zip \
+  dist/autoresearch-task-qa-0.3.4.zip \
   --expected-skill autoresearch-task-qa
 python3 scripts/verify_skill_archive.py \
-  dist/autoresearch-baseline-quality-0.3.3.zip \
+  dist/autoresearch-baseline-quality-0.3.4.zip \
   --expected-skill autoresearch-baseline-quality
-(cd dist && shasum -a 256 -c autoresearch-qa-skills-0.3.3.sha256)
+(cd dist && shasum -a 256 -c autoresearch-qa-skills-0.3.4.sha256)
 ```
 
 构建器固定 ZIP 时间、成员顺序与权限，同时输出 manifest 和 SHA256；相同源码必须得到逐字节相同的产物。发布时上传上述两个 ZIP、manifest 和 checksum 文件，不上传未验证的临时归档。
@@ -135,7 +135,7 @@ paper-discovery
 3. 用 `baseline-quality` 冻结公平的正式对照。
 4. 用 `task-authoring` 依次通过 selection、pilot、container、long-run 和 release 门。
 5. 在需要双轨迹、付费 GPU 或服务器 Docker 时使用 `run-isolation`；先小规模验证，再购买连续容量。
-6. 交付前使用 `autoresearch-qa-skills-0.3.3` 做双路独立本地质检。每路都必须开一个全新会话，只发送同一个完整提交包 ZIP，不带散文件、旧报告或作者解释。两路使用不同 AI；不同模型家族优先，同类 AI 的不同版本也可以。作者原会话内的自测不能替代这两次干净上下文实测。此流程用于减少单一判定器盲区；仓库尚未发布可支持具体准确率提升幅度的模型实测数据，因此不作量化承诺。
+6. 交付前使用 `autoresearch-qa-skills-0.3.4` 做双路独立本地质检。每路都必须开一个全新会话，只发送同一个完整提交包 ZIP，不带散文件、旧报告或作者解释。两路使用不同 AI；不同模型家族优先，同类 AI 的不同版本也可以。作者原会话内的自测不能替代这两次干净上下文实测。此流程用于减少单一判定器盲区；仓库尚未发布可支持具体准确率提升幅度的模型实测数据，因此不作量化承诺。
 7. 需要登记外部状态时，用 `feishu-three-table` 从当期权威题号开始，分别处理领题、提交/验收和组长初检；QA 通过不自动等于外部表已回填。
 8. 会话中断或更换 Agent 时，用 `conversation-handoff` 保存可继续执行的状态。
 
@@ -163,9 +163,11 @@ optimization-surface → baseline-quality → task-authoring → task-qa
 
 服务器“预装 Docker”只减少安装工作，不证明 Agent/Verifier 双镜像、GPU runtime、Hidden 隔离或目标 Harness 已通过。使用内置的宿主预检后，仍需真实构建和 trial receipt。
 
+单卡 NVIDIA 虚机的实际排障入口见 [`nvidia-docker-field-lessons.md`](skills/autoresearch-run-isolation/references/nvidia-docker-field-lessons.md)：它区分宿主 GPU、NVIDIA Docker、Harness backend 和正式任务四层证据，并覆盖 dry-run 假阳性、provider 硬失败、RPC/receipt 停滞、durable evaluator、Verifier ENTRYPOINT 与 CUDA/Triton cache。
+
 ### 4. 只验收一个现成交付包
 
-使用 `autoresearch-qa-skills-0.3.3` 中的 `autoresearch-task-qa`，保持只读。本地自检必须使用两个相互隔离的新会话，每个会话只提供同一 SHA256 的完整 ZIP，并由两种不同 AI（同类不同版本可接受）各自完成一次完整质检。
+使用 `autoresearch-qa-skills-0.3.4` 中的 `autoresearch-task-qa`，保持只读。本地自检必须使用两个相互隔离的新会话，每个会话只提供同一 SHA256 的完整 ZIP，并由两种不同 AI（同类不同版本可接受）各自完成一次完整质检。
 
 先固定输入摘要：
 

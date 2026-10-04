@@ -2,13 +2,13 @@
 
 > 为 AutoResearch 的双 Agent 轨迹、付费 GPU 长跑、Docker 执行、可信评测与恢复建立共享协议、成本决策和隔离边界。用于小时/包日选择、启动或恢复 campaign、设计证据与防止题目或轨迹串用；不替代具体任务算法或最终平台 QA。
 
-先读 [协议与隔离不变量](references/protocol-and-isolation.md)。涉及租卡先读 [成本与容量](references/cost-and-capacity.md)；涉及容器或 Harbor 再读 [Docker 执行与 Harness 边界](references/docker-and-harness.md)；准备停机、释放实例或冻结最终包时再读 [最终化与关机](references/finalization-and-shutdown.md)。优先复用成熟运行协议；每题只实现任务适配器与可信评测器。
+先读 [协议与隔离不变量](references/protocol-and-isolation.md)。涉及租卡先读 [成本与容量](references/cost-and-capacity.md)；涉及容器或 Harbor 再读 [Docker 执行与 Harness 边界](references/docker-and-harness.md)；接管单卡 NVIDIA 虚机、排查长跑停滞、处理 GPU backend 或 CUDA 缓存问题时读 [单卡 NVIDIA Docker 现场蒸馏](references/nvidia-docker-field-lessons.md)；准备停机、释放实例或冻结最终包时再读 [最终化与关机](references/finalization-and-shutdown.md)。优先复用成熟运行协议；每题只实现任务适配器与可信评测器。
 
 运行前冻结任务树并计算逐文件哈希；两条 Agent 轨迹使用同一公共任务摘要，但使用独立 workspace、控制目录、端口、上下文、凭据和轨迹目录。候选进程只能看到 Starter 与公开资产，Reference、专家证据和另一条轨迹不得进入其挂载范围。模型名称与 provider 是任务参数，不写死为某一家服务。
 
-把指标、阈值、随机性协议、两条轨迹、开发环境、目标 Harness、持久快照与停止条件写入 JSON 合同，并在租卡前运行 `scripts/preflight.py`。GPU 任务还必须记录目标 backend 当前版本的能力依据。
+把指标、阈值、随机性协议、两条轨迹、开发环境、目标 Harness、持久快照、停止条件、liveness 协议、provider 硬失败策略和 durable evaluator 重试规则写入 JSON 合同，并在租卡前运行 `scripts/preflight.py`。GPU 任务还必须记录目标 backend 当前版本的能力依据。
 
-第三方服务器声称内置 Docker 时，先用 `scripts/docker_host_preflight.py` 检查 daemon、Compose、存储和可选 NVIDIA runtime，再分别取得 Agent 镜像、Verifier 镜像和容器内 GPU 的动态 probe。宿主有 Docker 不能替代两条隔离 lane、双镜像构建或目标 Harness 的完整 trial 证据。
+第三方服务器声称内置 Docker 时，先用 `scripts/docker_host_preflight.py` 检查 daemon、Compose、存储和可选 NVIDIA runtime；GPU 场景再用本地已有、digest 固定的镜像执行显式动态 probe。随后分别取得 Agent 镜像、Verifier 镜像和目标 backend 的真实 GPU Trial。宿主有 Docker、通用 CUDA 容器成功或 Harness dry-run 通过，都不能替代两条隔离 lane、双镜像构建或完整 reward 证据。
 
 每轮保存原始 RPC、命令、评测摘要、receipt 和来源哈希。每个正式结果只绑定一个真实 run/trial；源码、配置、seed、receipt、artifact、checkpoint 与时间窗不得跨轮拼接。可用 `scripts/verify_lineage.py` 检查结构化索引。
 

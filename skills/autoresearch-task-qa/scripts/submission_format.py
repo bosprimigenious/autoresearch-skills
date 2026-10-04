@@ -646,7 +646,7 @@ def _collect_trajectory(
     }
     if not _require_file(
         path, submission_root, issues, "MISSING_TRAJECTORY",
-        "v0.3.3 契约需提交两份真实轨迹；允许 review 选择等价文件名。",
+        "v0.3.4 契约需提交两份真实轨迹；允许 review 选择等价文件名。",
     ):
         return output
     output["present"] = True

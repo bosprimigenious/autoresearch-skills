@@ -19,6 +19,9 @@ REQUIRED = (
     "target_harness",
     "persistent_snapshot",
     "stop_loss",
+    "liveness_protocol",
+    "provider_failure_policy",
+    "durable_evaluator_reconciliation",
 )
 
 
